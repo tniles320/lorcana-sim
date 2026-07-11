@@ -1,0 +1,5 @@
+node_modules/
+dist/
+data/cards/raw/
+*.log
+.DS_Store
