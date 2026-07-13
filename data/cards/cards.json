@@ -1,0 +1,729 @@
+[
+  {
+    "id": "crd_7f533fd75db94b9da5770ff4daa062ce",
+    "name": "Aladdin",
+    "version": "Resolute Swordsman",
+    "type": [
+      "Character"
+    ],
+    "ink": "Steel",
+    "cost": 1,
+    "inkwell": true,
+    "classifications": [
+      "Hero",
+      "Storyborn"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 1,
+    "willpower": 3,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "4"
+  },
+  {
+    "id": "crd_bd27b70ddc3540489c47c824128ec53f",
+    "name": "Bagheera",
+    "version": "Cautious Explorer",
+    "type": [
+      "Character"
+    ],
+    "ink": "Amber",
+    "cost": 3,
+    "inkwell": true,
+    "classifications": [
+      "Storyborn",
+      "Ally"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 4,
+    "willpower": 4,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Uncommon",
+    "setCode": "10"
+  },
+  {
+    "id": "crd_aca54534108b43fcb881cb411581c618",
+    "name": "Beast",
+    "version": "Thick-Skinned",
+    "type": [
+      "Character"
+    ],
+    "ink": "Steel",
+    "cost": 3,
+    "inkwell": true,
+    "classifications": [
+      "Storyborn",
+      "Hero",
+      "Prince"
+    ],
+    "text": "Resist +1 (Damage dealt to this character is reduced by 1.)",
+    "keywords": [
+      "Resist"
+    ],
+    "strength": 2,
+    "willpower": 3,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "4"
+  },
+  {
+    "id": "crd_5646a42f0a98475ba7c07e55f7cb47df",
+    "name": "Chief Tui",
+    "version": "Proud of Motunui",
+    "type": [
+      "Character"
+    ],
+    "ink": "Steel",
+    "cost": 4,
+    "inkwell": true,
+    "classifications": [
+      "Storyborn",
+      "Mentor",
+      "King"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 3,
+    "willpower": 4,
+    "loreValue": 2,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "3"
+  },
+  {
+    "id": "crd_e4383a9f6b7d4f3291c7935a76610f44",
+    "name": "Dewey",
+    "version": "Lovable Showoff",
+    "type": [
+      "Character"
+    ],
+    "ink": "Amber",
+    "cost": 4,
+    "inkwell": true,
+    "classifications": [
+      "Storyborn",
+      "Ally"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 4,
+    "willpower": 4,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "8"
+  },
+  {
+    "id": "crd_9d7dbe554e37401d8507e1b3b69c69bd",
+    "name": "Hercules",
+    "version": "Hero in Training",
+    "type": [
+      "Character"
+    ],
+    "ink": "Steel",
+    "cost": 2,
+    "inkwell": true,
+    "classifications": [
+      "Storyborn",
+      "Hero",
+      "Prince"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 2,
+    "willpower": 3,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "2"
+  },
+  {
+    "id": "crd_2ae8a63bba494c3e842e54ec56da3021",
+    "name": "Hercules",
+    "version": "True Hero",
+    "type": [
+      "Character"
+    ],
+    "ink": "Steel",
+    "cost": 3,
+    "inkwell": true,
+    "classifications": [
+      "Dreamborn",
+      "Hero",
+      "Prince"
+    ],
+    "text": "Bodyguard (This character may enter play exerted. An opposing character who challenges one of your characters must choose one with Bodyguard if able.)",
+    "keywords": [
+      "Bodyguard"
+    ],
+    "strength": 3,
+    "willpower": 3,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "9"
+  },
+  {
+    "id": "crd_0033f4eb44a14ebea87dbdca205d9247",
+    "name": "Inspector Tezuka",
+    "version": "Resolute Officer",
+    "type": [
+      "Character"
+    ],
+    "ink": "Steel",
+    "cost": 2,
+    "inkwell": true,
+    "classifications": [
+      "Storyborn",
+      "Ally",
+      "Detective"
+    ],
+    "text": "Bodyguard (This character may enter play exerted. An opposing character who challenges one of your characters must choose one with Bodyguard if able.)",
+    "keywords": [
+      "Bodyguard"
+    ],
+    "strength": 2,
+    "willpower": 3,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "10"
+  },
+  {
+    "id": "crd_d9abb9a8a381433486a5da9e3173de4b",
+    "name": "King Hubert",
+    "version": "Phillip's Father",
+    "type": [
+      "Character"
+    ],
+    "ink": "Steel",
+    "cost": 3,
+    "inkwell": true,
+    "classifications": [
+      "Storyborn",
+      "Mentor",
+      "King"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 3,
+    "willpower": 4,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "6"
+  },
+  {
+    "id": "crd_3071dce7efaf4e139b192b2e026b2999",
+    "name": "Kohut",
+    "version": "Trusted Marine",
+    "type": [
+      "Character"
+    ],
+    "ink": "Steel",
+    "cost": 2,
+    "inkwell": true,
+    "classifications": [
+      "Storyborn",
+      "Ally"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 2,
+    "willpower": 3,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "6"
+  },
+  {
+    "id": "crd_097bd499debd459f9ce55afa7bc72d66",
+    "name": "Kristoff",
+    "version": "Official Ice Master",
+    "type": [
+      "Character"
+    ],
+    "ink": "Steel",
+    "cost": 3,
+    "inkwell": true,
+    "classifications": [
+      "Storyborn",
+      "Ally"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 3,
+    "willpower": 3,
+    "loreValue": 2,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "1"
+  },
+  {
+    "id": "crd_3a743f412ff34cd38bd9896f146950f4",
+    "name": "Li Shang",
+    "version": "Imperial Captain",
+    "type": [
+      "Character"
+    ],
+    "ink": "Steel",
+    "cost": 5,
+    "inkwell": true,
+    "classifications": [
+      "Dreamborn",
+      "Hero",
+      "Captain"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 5,
+    "willpower": 5,
+    "loreValue": 2,
+    "moveCost": null,
+    "rarity": "Uncommon",
+    "setCode": "9"
+  },
+  {
+    "id": "crd_0ccbea0b8fd54779939f56e1fcc3769a",
+    "name": "Lilo",
+    "version": "Making a Wish",
+    "type": [
+      "Character"
+    ],
+    "ink": "Amber",
+    "cost": 1,
+    "inkwell": false,
+    "classifications": [
+      "Storyborn",
+      "Hero"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 1,
+    "willpower": 1,
+    "loreValue": 2,
+    "moveCost": null,
+    "rarity": "Rare",
+    "setCode": "1"
+  },
+  {
+    "id": "crd_da34abc7da464b338103666b1ca3d0f8",
+    "name": "Mickey Mouse",
+    "version": "True Friend",
+    "type": [
+      "Character"
+    ],
+    "ink": "Amber",
+    "cost": 3,
+    "inkwell": true,
+    "classifications": [
+      "Storyborn",
+      "Hero"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 3,
+    "willpower": 3,
+    "loreValue": 2,
+    "moveCost": null,
+    "rarity": "Uncommon",
+    "setCode": "9"
+  },
+  {
+    "id": "crd_3fcdfc49c12743bea7e8f632ba06c41b",
+    "name": "Mickey Mouse",
+    "version": "Food Fight Defender",
+    "type": [
+      "Character"
+    ],
+    "ink": "Steel",
+    "cost": 1,
+    "inkwell": true,
+    "classifications": [
+      "Storyborn",
+      "Hero"
+    ],
+    "text": "Resist +1 (Damage dealt to this character is reduced by 1.)",
+    "keywords": [
+      "Resist"
+    ],
+    "strength": 1,
+    "willpower": 2,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "5"
+  },
+  {
+    "id": "crd_e40a35d966914476b267935d79337667",
+    "name": "Minnie Mouse",
+    "version": "Beloved Princess",
+    "type": [
+      "Character"
+    ],
+    "ink": "Amber",
+    "cost": 2,
+    "inkwell": true,
+    "classifications": [
+      "Dreamborn",
+      "Princess"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 2,
+    "willpower": 3,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "1"
+  },
+  {
+    "id": "crd_da584233ea5149dd814bd6b372e015d5",
+    "name": "Moana",
+    "version": "Determined Explorer",
+    "type": [
+      "Character"
+    ],
+    "ink": "Amber",
+    "cost": 3,
+    "inkwell": false,
+    "classifications": [
+      "Storyborn",
+      "Hero",
+      "Princess"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 3,
+    "willpower": 4,
+    "loreValue": 2,
+    "moveCost": null,
+    "rarity": "Rare",
+    "setCode": "5"
+  },
+  {
+    "id": "crd_0f26db7d01c74453b49bf5bc316cfea9",
+    "name": "Mufasa",
+    "version": "Respected King",
+    "type": [
+      "Character"
+    ],
+    "ink": "Steel",
+    "cost": 4,
+    "inkwell": true,
+    "classifications": [
+      "Storyborn",
+      "Mentor",
+      "King"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 4,
+    "willpower": 4,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Uncommon",
+    "setCode": "7"
+  },
+  {
+    "id": "crd_1bd5bf1817684e57a918f2fdc04b4e3a",
+    "name": "Nakoma",
+    "version": "Waiting Out the Storm",
+    "type": [
+      "Character"
+    ],
+    "ink": "Amber",
+    "cost": 4,
+    "inkwell": true,
+    "classifications": [
+      "Storyborn",
+      "Ally"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 4,
+    "willpower": 6,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "11"
+  },
+  {
+    "id": "crd_cd157cb698744c9ab14a292d392123b8",
+    "name": "Nick Wilde",
+    "version": "Sly Fox Sleuth",
+    "type": [
+      "Character"
+    ],
+    "ink": "Steel",
+    "cost": 1,
+    "inkwell": true,
+    "classifications": [
+      "Dreamborn",
+      "Ally",
+      "Detective"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 2,
+    "willpower": 2,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "10"
+  },
+  {
+    "id": "crd_59c6d7badfc34295857ca0743b40ceca",
+    "name": "Prince Eric",
+    "version": "Seafaring Prince",
+    "type": [
+      "Character"
+    ],
+    "ink": "Amber",
+    "cost": 3,
+    "inkwell": true,
+    "classifications": [
+      "Dreamborn",
+      "Hero",
+      "Prince"
+    ],
+    "text": "Bodyguard (This character may enter play exerted. An opposing character who challenges one of your characters must choose a character with Bodyguard if able.)",
+    "keywords": [
+      "Bodyguard"
+    ],
+    "strength": 3,
+    "willpower": 3,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "4"
+  },
+  {
+    "id": "crd_fec8fc6f1b9745078b63c897c32c95c5",
+    "name": "Prince Eric",
+    "version": "Noble Swordsman",
+    "type": [
+      "Character"
+    ],
+    "ink": "Amber",
+    "cost": 5,
+    "inkwell": true,
+    "classifications": [
+      "Dreamborn",
+      "Hero",
+      "Prince"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 6,
+    "willpower": 7,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "12"
+  },
+  {
+    "id": "crd_81a978c964b049f19747a98304b7f03d",
+    "name": "Prince Eric",
+    "version": "Dashing and Brave",
+    "type": [
+      "Character"
+    ],
+    "ink": "Steel",
+    "cost": 2,
+    "inkwell": true,
+    "classifications": [
+      "Storyborn",
+      "Hero",
+      "Prince"
+    ],
+    "text": "Challenger +2 (While challenging, this character gets +2 {S}).",
+    "keywords": [
+      "Challenger"
+    ],
+    "strength": 1,
+    "willpower": 3,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "9"
+  },
+  {
+    "id": "crd_65868398266f4f95944543e1568bf043",
+    "name": "Prince Naveen",
+    "version": "Carefree Explorer",
+    "type": [
+      "Character"
+    ],
+    "ink": "Amber",
+    "cost": 2,
+    "inkwell": true,
+    "classifications": [
+      "Storyborn",
+      "Hero",
+      "Prince"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 2,
+    "willpower": 3,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "6"
+  },
+  {
+    "id": "crd_a3bd1e1b8b3a4ca094cefbc1d7bf4d60",
+    "name": "Simba",
+    "version": "Protective Cub",
+    "type": [
+      "Character"
+    ],
+    "ink": "Amber",
+    "cost": 2,
+    "inkwell": true,
+    "classifications": [
+      "Storyborn",
+      "Hero",
+      "Prince"
+    ],
+    "text": "Bodyguard (This character may enter play exerted. An opposing character who challenges one of your characters must choose one with Bodyguard if able.)",
+    "keywords": [
+      "Bodyguard"
+    ],
+    "strength": 2,
+    "willpower": 3,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "1"
+  },
+  {
+    "id": "crd_27747f32e8a3479cac5b138f81f0dff0",
+    "name": "The Headless Horseman",
+    "version": "Relentless Spirit",
+    "type": [
+      "Character"
+    ],
+    "ink": "Steel",
+    "cost": 4,
+    "inkwell": true,
+    "classifications": [
+      "Storyborn",
+      "Villain"
+    ],
+    "text": "Bodyguard (This character may enter play exerted. An opposing character who challenges one of your characters must choose one with Bodyguard if able.)",
+    "keywords": [
+      "Bodyguard"
+    ],
+    "strength": 4,
+    "willpower": 4,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "10"
+  },
+  {
+    "id": "crd_0c1fa4bfab94474da9e4a8396bbed19f",
+    "name": "Tiana",
+    "version": "Warm and Happy",
+    "type": [
+      "Character"
+    ],
+    "ink": "Amber",
+    "cost": 4,
+    "inkwell": true,
+    "classifications": [
+      "Dreamborn",
+      "Hero",
+      "Princess"
+    ],
+    "text": "Support (Whenever this character quests, you may add their {S} to another chosen character's {S} this turn.)",
+    "keywords": [
+      "Support"
+    ],
+    "strength": 3,
+    "willpower": 4,
+    "loreValue": 2,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "11"
+  },
+  {
+    "id": "crd_d3dd900e88304c778c319c8facd2c8f2",
+    "name": "Vanellope von Schweetz",
+    "version": "Sugar Rush Champ",
+    "type": [
+      "Character"
+    ],
+    "ink": "Amber",
+    "cost": 1,
+    "inkwell": true,
+    "classifications": [
+      "Storyborn",
+      "Hero",
+      "Princess",
+      "Racer"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 2,
+    "willpower": 2,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "5"
+  },
+  {
+    "id": "crd_e989edbf82194e8e9f4bd73426377d57",
+    "name": "Wendy Darling",
+    "version": "Talented Sailor",
+    "type": [
+      "Character"
+    ],
+    "ink": "Amber",
+    "cost": 2,
+    "inkwell": true,
+    "classifications": [
+      "Dreamborn",
+      "Hero"
+    ],
+    "text": "",
+    "keywords": [],
+    "strength": 1,
+    "willpower": 3,
+    "loreValue": 2,
+    "moveCost": null,
+    "rarity": "Uncommon",
+    "setCode": "3"
+  },
+  {
+    "id": "crd_ff8566269f8e44b2ae13abb3a79a27dd",
+    "name": "Woody",
+    "version": "Waiting for a Friend",
+    "type": [
+      "Character"
+    ],
+    "ink": "Amber",
+    "cost": 1,
+    "inkwell": true,
+    "classifications": [
+      "Storyborn",
+      "Hero",
+      "Toy"
+    ],
+    "text": "",
+    "keywords": null,
+    "strength": 2,
+    "willpower": 2,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "12"
+  }
+]

@@ -1,0 +1,21 @@
+{
+  "name": "amber-vanilla-test",
+  "description": "Single-ink Amber test deck, mostly vanilla characters plus a few Bodyguard/Support cards. Built to validate the engine core (zones, turn structure, event hooks) before touching bespoke abilities.",
+  "cards": [
+    { "name": "Lilo", "version": "Making a Wish", "count": 4 },
+    { "name": "Vanellope von Schweetz", "version": "Sugar Rush Champ", "count": 4 },
+    { "name": "Woody", "version": "Waiting for a Friend", "count": 4 },
+    { "name": "Minnie Mouse", "version": "Beloved Princess", "count": 4 },
+    { "name": "Prince Naveen", "version": "Carefree Explorer", "count": 4 },
+    { "name": "Simba", "version": "Protective Cub", "count": 4 },
+    { "name": "Wendy Darling", "version": "Talented Sailor", "count": 4 },
+    { "name": "Mickey Mouse", "version": "True Friend", "count": 4 },
+    { "name": "Moana", "version": "Determined Explorer", "count": 4 },
+    { "name": "Bagheera", "version": "Cautious Explorer", "count": 4 },
+    { "name": "Prince Eric", "version": "Seafaring Prince", "count": 4 },
+    { "name": "Dewey", "version": "Lovable Showoff", "count": 4 },
+    { "name": "Nakoma", "version": "Waiting Out the Storm", "count": 4 },
+    { "name": "Tiana", "version": "Warm and Happy", "count": 4 },
+    { "name": "Prince Eric", "version": "Noble Swordsman", "count": 4 }
+  ]
+}

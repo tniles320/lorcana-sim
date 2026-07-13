@@ -1,0 +1,21 @@
+{
+  "name": "steel-vanilla-test",
+  "description": "Single-ink Steel test deck, mostly vanilla characters plus a few Bodyguard/Resist/Challenger cards. Built to validate the engine core (zones, turn structure, event hooks) before touching bespoke abilities.",
+  "cards": [
+    { "name": "Aladdin", "version": "Resolute Swordsman", "count": 4 },
+    { "name": "Nick Wilde", "version": "Sly Fox Sleuth", "count": 4 },
+    { "name": "Mickey Mouse", "version": "Food Fight Defender", "count": 4 },
+    { "name": "Hercules", "version": "Hero in Training", "count": 4 },
+    { "name": "Kohut", "version": "Trusted Marine", "count": 4 },
+    { "name": "Inspector Tezuka", "version": "Resolute Officer", "count": 4 },
+    { "name": "Prince Eric", "version": "Dashing and Brave", "count": 4 },
+    { "name": "Kristoff", "version": "Official Ice Master", "count": 4 },
+    { "name": "King Hubert", "version": "Phillip's Father", "count": 4 },
+    { "name": "Hercules", "version": "True Hero", "count": 4 },
+    { "name": "Beast", "version": "Thick-Skinned", "count": 4 },
+    { "name": "Mufasa", "version": "Respected King", "count": 4 },
+    { "name": "Chief Tui", "version": "Proud of Motunui", "count": 4 },
+    { "name": "The Headless Horseman", "version": "Relentless Spirit", "count": 4 },
+    { "name": "Li Shang", "version": "Imperial Captain", "count": 4 }
+  ]
+}
