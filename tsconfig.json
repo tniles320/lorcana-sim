@@ -9,8 +9,9 @@
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
     "types": ["node"],
-    "outDir": "dist",
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
     "rootDir": "."
   },
-  "include": ["src", "scripts"]
+  "include": ["src", "scripts", "tests"]
 }
