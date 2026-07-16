@@ -18,6 +18,15 @@ function loadCardIndex(): Map<string, Card> {
   return cardIndex;
 }
 
+/** Looks up a single card by name and version from cards.json. */
+export function findCard(name: string, version: string): Card {
+  const card = loadCardIndex().get(`${name}|${version}`);
+  if (!card) {
+    throw new Error(`Card not found in cards.json: ${name} - ${version}`);
+  }
+  return card;
+}
+
 /** Loads a deck file's cards, expanded to one entry per physical copy. */
 export function loadDeck(deckFileName: string): Card[] {
   const raw: Deck = JSON.parse(

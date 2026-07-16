@@ -36,7 +36,8 @@ function nextInstanceId(): string {
   return `inst_${instanceCounter}`;
 }
 
-function toInstance(card: Card): CardInstance {
+/** Wraps a static card definition into a fresh in-game instance (own id, no damage, ready). */
+export function createInstance(card: Card): CardInstance {
   return {
     instanceId: nextInstanceId(),
     card,
@@ -68,7 +69,7 @@ function createPlayer(
   deckCards: Card[],
   rng?: () => number,
 ): PlayerState {
-  const deck = shuffle(deckCards, rng).map(toInstance);
+  const deck = shuffle(deckCards, rng).map(createInstance);
   return {
     id,
     deck,

@@ -19,7 +19,7 @@ interface LorcastCard {
   inkwell: boolean;
   classifications: string[] | null;
   text: string | null;
-  keywords: string[];
+  keywords: string[] | null;
   strength: number | null;
   willpower: number | null;
   lore: number | null;
@@ -39,7 +39,7 @@ function toCard(raw: LorcastCard): Card {
     inkwell: raw.inkwell,
     classifications: raw.classifications ?? [],
     text: (raw.text ?? "").replace(/\r\n/g, "\n").trim(),
-    keywords: raw.keywords,
+    keywords: raw.keywords ?? [],
     strength: raw.strength,
     willpower: raw.willpower,
     loreValue: raw.lore,

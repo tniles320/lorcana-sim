@@ -176,7 +176,7 @@ describe("legalChallengeTargets / challenge", () => {
 
     const attacker = makeInstance({
       strength: 2,
-      willpower: 3,
+      willpower: 10, // comfortably survives the counter-damage below
       keywords: ["Challenger"],
       text: "Challenger +2 (While challenging, this character gets +2 {S}.)",
     });
@@ -197,6 +197,7 @@ describe("legalChallengeTargets / challenge", () => {
     // defender: 3 strength, minus attacker's 0 resist = 3 damage
     expect(attacker.damage).toBe(3);
     expect(attacker.exerted).toBe(true);
+    expect(attackerPlayer.play).toContainEqual(attacker);
   });
 
   it("banishes a character once damage reaches its willpower", () => {

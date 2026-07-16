@@ -3,3 +3,4 @@ dist/
 data/cards/raw/
 *.log
 .DS_Store
+rust/target/
