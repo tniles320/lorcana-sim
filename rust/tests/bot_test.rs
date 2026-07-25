@@ -196,10 +196,12 @@ mod choose_move_tests {
     }
 
     #[test]
-    fn takes_a_challenge_that_kills_the_defender_without_losing_the_attacker() {
+    fn takes_a_challenge_that_clearly_outscores_questing() {
         let mut state = new_game();
         state.players[0].inked_this_turn = true;
 
+        // Free kill (attacker survives): challenge_score is the defender's
+        // full threat_value, easily beating a 1-lore quest.
         let attacker = CardBuilder::new().strength(5).willpower(5).build_instance();
         let attacker_id = attacker.instance_id.clone();
         state.players[0].play.push(attacker);
@@ -219,13 +221,19 @@ mod choose_move_tests {
     }
 
     #[test]
-    fn does_not_take_a_challenge_that_would_lose_the_attacker() {
+    fn avoids_a_clearly_bad_trade_in_favor_of_questing() {
         let mut state = new_game();
         state.players[0].inked_this_turn = true;
 
-        // Attacker would banish the defender, but also dies in the trade --
-        // the crude bot is written to only take challenges it clearly wins.
-        let attacker = CardBuilder::new().strength(5).willpower(3).build_instance();
+        // Attacker (lore 3, so questing scores 3) would banish the defender
+        // but also dies -- and the defender (a vanilla 5/4 with only 1 lore)
+        // isn't worth nearly as much as the attacker, so the trade nets
+        // clearly negative. Questing should win easily.
+        let attacker = CardBuilder::new()
+            .strength(5)
+            .willpower(3)
+            .lore_value(3)
+            .build_instance();
         let attacker_id = attacker.instance_id.clone();
         state.players[0].play.push(attacker);
 
@@ -233,11 +241,75 @@ mod choose_move_tests {
         defender.exerted = true;
         state.players[1].play.push(defender);
 
-        // Nothing else to do, so it should quest with the attacker instead of trading.
         assert_eq!(
             choose_move(&state),
             Move::Quest {
                 instance_id: attacker_id
+            }
+        );
+    }
+
+    #[test]
+    fn takes_a_worthwhile_trade_even_though_the_attacker_dies() {
+        let mut state = new_game();
+        state.players[0].inked_this_turn = true;
+
+        // Attacker (low lore, low value) trades into a much higher-value
+        // defender (lore 3 -- a real lore-engine threat). Net score should
+        // still favor the trade even though the attacker doesn't survive.
+        let attacker = CardBuilder::new()
+            .strength(4)
+            .willpower(1)
+            .lore_value(1)
+            .build_instance();
+        let attacker_id = attacker.instance_id.clone();
+        state.players[0].play.push(attacker);
+
+        let mut defender = CardBuilder::new()
+            .strength(5)
+            .willpower(3)
+            .lore_value(3)
+            .build_instance();
+        defender.exerted = true;
+        let defender_id = defender.instance_id.clone();
+        state.players[1].play.push(defender);
+
+        assert_eq!(
+            choose_move(&state),
+            Move::Challenge {
+                attacker_id,
+                defender_id
+            }
+        );
+    }
+
+    #[test]
+    fn chips_a_high_threat_target_even_without_a_kill() {
+        let mut state = new_game();
+        state.players[0].inked_this_turn = true;
+
+        // Attacker can't kill this turn (str 1 vs. willpower 6), and takes
+        // no real risk doing it (defender's strength is low), but the
+        // defender is a big lore threat -- partial chip-damage credit
+        // should still outscore a 1-lore quest.
+        let attacker = CardBuilder::new().strength(1).willpower(5).build_instance();
+        let attacker_id = attacker.instance_id.clone();
+        state.players[0].play.push(attacker);
+
+        let mut defender = CardBuilder::new()
+            .strength(1)
+            .willpower(6)
+            .lore_value(3)
+            .build_instance();
+        defender.exerted = true;
+        let defender_id = defender.instance_id.clone();
+        state.players[1].play.push(defender);
+
+        assert_eq!(
+            choose_move(&state),
+            Move::Challenge {
+                attacker_id,
+                defender_id
             }
         );
     }
