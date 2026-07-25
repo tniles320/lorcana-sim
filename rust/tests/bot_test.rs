@@ -135,6 +135,45 @@ mod choose_move_tests {
     }
 
     #[test]
+    fn does_not_ink_a_card_it_could_currently_afford_to_play() {
+        let mut state = new_game();
+        state.players[0].inkwell.push(CardBuilder::new().build_instance()); // 1 ready ink
+        let affordable = CardBuilder::new().cost(1).build_instance();
+        let affordable_id = affordable.instance_id.clone();
+        state.players[0].hand.push(affordable);
+
+        // Even though it's the only (and thus "cheapest") inkable card,
+        // inking it would throw away the only play available this turn.
+        assert_eq!(
+            choose_move(&state),
+            Move::PlayCharacter {
+                instance_id: affordable_id,
+                enter_exerted: false
+            }
+        );
+    }
+
+    #[test]
+    fn inks_a_card_it_could_not_currently_afford_to_play_instead() {
+        let mut state = new_game();
+        state.players[0].inkwell.push(CardBuilder::new().build_instance()); // 1 ready ink
+        let affordable = CardBuilder::new().cost(1).build_instance();
+        let unaffordable = CardBuilder::new().cost(5).build_instance();
+        let unaffordable_id = unaffordable.instance_id.clone();
+        state.players[0].hand.push(affordable);
+        state.players[0].hand.push(unaffordable);
+
+        // The cost-1 card stays in hand to be played; the cost-5 card can't
+        // be played this turn regardless, so it's safe to convert to ink.
+        assert_eq!(
+            choose_move(&state),
+            Move::Ink {
+                instance_id: unaffordable_id
+            }
+        );
+    }
+
+    #[test]
     fn plays_the_most_expensive_affordable_character_once_inked() {
         let mut state = new_game();
         state.players[0].inked_this_turn = true;

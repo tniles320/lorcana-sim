@@ -83,6 +83,15 @@ fn main() {
             break;
         }
 
+        let active = &state.players[state.active_player];
+        let hand_names: Vec<&str> = active.hand.iter().map(|c| c.card.name.as_str()).collect();
+        println!(
+            "--- Turn {}: {}'s turn (hand: {}) ---",
+            state.turn_number,
+            player_label(state.active_player),
+            hand_names.join(", ")
+        );
+
         loop {
             let mv = choose_move(&state);
             let description = describe_move(&state, &mv);

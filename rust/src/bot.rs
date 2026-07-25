@@ -15,13 +15,19 @@ use crate::engine::state::{opponent_index, GameState};
 pub fn choose_move(state: &GameState) -> Move {
     let active = &state.players[state.active_player];
 
-    // 1. Ink the cheapest inkable card in hand (once per turn), keeping
-    //    higher-cost cards available to actually play.
+    let available_ink = active.inkwell.iter().filter(|i| !i.exerted).count() as i32;
+    let currently_playable = |c: &crate::engine::state::CardInstance| {
+        c.card.card_type.contains(&CardType::Character) && c.card.cost <= available_ink
+    };
+
+    // 1. Ink the cheapest inkable card in hand that we couldn't already
+    //    afford to play -- inking a card we could play right now would
+    //    throw away a real play just to gain ink we may not even need yet.
     if !active.inked_this_turn
         && let Some(card) = active
             .hand
             .iter()
-            .filter(|c| c.card.inkwell)
+            .filter(|c| c.card.inkwell && !currently_playable(c))
             .min_by_key(|c| c.card.cost)
     {
         return Move::Ink {
@@ -30,12 +36,10 @@ pub fn choose_move(state: &GameState) -> Move {
     }
 
     // 2. Play the biggest character we can currently afford.
-    let available_ink = active.inkwell.iter().filter(|i| !i.exerted).count() as i32;
     if let Some(card) = active
         .hand
         .iter()
-        .filter(|c| c.card.card_type.contains(&CardType::Character))
-        .filter(|c| c.card.cost <= available_ink)
+        .filter(|c| currently_playable(c))
         .max_by_key(|c| c.card.cost)
     {
         return Move::PlayCharacter {
