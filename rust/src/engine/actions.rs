@@ -35,13 +35,13 @@ fn pay_ink(player: &mut PlayerState, amount: usize) {
     }
 }
 
-fn has_keyword(instance: &CardInstance, keyword: &str) -> bool {
+pub(crate) fn has_keyword(instance: &CardInstance, keyword: &str) -> bool {
     instance.card.keywords.iter().any(|k| k == keyword)
 }
 
 /// Generic keywords like "Challenger +2" or "Resist +1" carry their value in
 /// the rules text rather than a separate field, so we read it out of there.
-fn keyword_value(instance: &CardInstance, keyword: &str) -> i32 {
+pub(crate) fn keyword_value(instance: &CardInstance, keyword: &str) -> i32 {
     let text = &instance.card.text;
     let Some(pos) = text.find(keyword) else {
         return 0;
@@ -56,12 +56,12 @@ fn keyword_value(instance: &CardInstance, keyword: &str) -> i32 {
 
 /// Quest always requires the character to be past its "wet ink" turn — Rush
 /// does not lift this restriction, it only applies to challenging.
-fn can_quest(instance: &CardInstance) -> bool {
+pub(crate) fn can_quest(instance: &CardInstance) -> bool {
     !instance.exerted && !instance.played_this_turn
 }
 
 /// Rush lets a character challenge the same turn it's played.
-fn can_challenge_as_attacker(instance: &CardInstance) -> bool {
+pub(crate) fn can_challenge_as_attacker(instance: &CardInstance) -> bool {
     if instance.exerted {
         return false;
     }
@@ -288,4 +288,108 @@ pub fn challenge(
     banish_if_destroyed(defender_player, defender_idx);
 
     Ok(())
+}
+
+/// A single legal main-phase action, as something a bot (or a human driver
+/// loop) can enumerate and choose among, then hand to `apply_move`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Move {
+    Ink {
+        instance_id: String,
+    },
+    PlayCharacter {
+        instance_id: String,
+        enter_exerted: bool,
+    },
+    Quest {
+        instance_id: String,
+    },
+    Challenge {
+        attacker_id: String,
+        defender_id: String,
+    },
+    /// Ends the active player's turn without taking any further action.
+    Pass,
+}
+
+/// Every legal action the active player could take right now, plus `Pass`.
+/// A bot picks one of these; `apply_move` executes whichever is chosen.
+pub fn legal_moves(state: &GameState) -> Vec<Move> {
+    let player = &state.players[state.active_player];
+    let mut moves = Vec::new();
+
+    if !player.inked_this_turn {
+        for card in &player.hand {
+            if card.card.inkwell {
+                moves.push(Move::Ink {
+                    instance_id: card.instance_id.clone(),
+                });
+            }
+        }
+    }
+
+    let available = available_ink(player) as i32;
+    for card in &player.hand {
+        if !card.card.card_type.contains(&CardType::Character) {
+            continue;
+        }
+        if card.card.cost > available {
+            continue;
+        }
+        moves.push(Move::PlayCharacter {
+            instance_id: card.instance_id.clone(),
+            enter_exerted: false,
+        });
+        if has_keyword(card, "Bodyguard") {
+            moves.push(Move::PlayCharacter {
+                instance_id: card.instance_id.clone(),
+                enter_exerted: true,
+            });
+        }
+    }
+
+    for card in &player.play {
+        if can_quest(card) {
+            moves.push(Move::Quest {
+                instance_id: card.instance_id.clone(),
+            });
+        }
+    }
+
+    for card in &player.play {
+        if can_challenge_as_attacker(card) {
+            for target_id in legal_challenge_targets(state, state.active_player) {
+                moves.push(Move::Challenge {
+                    attacker_id: card.instance_id.clone(),
+                    defender_id: target_id,
+                });
+            }
+        }
+    }
+
+    moves.push(Move::Pass);
+    moves
+}
+
+/// Executes a `Move` chosen from `legal_moves` against `state`.
+pub fn apply_move(state: &mut GameState, mv: &Move) -> Result<(), IllegalActionError> {
+    match mv {
+        Move::Ink { instance_id } => ink_card(state, instance_id),
+        Move::PlayCharacter {
+            instance_id,
+            enter_exerted,
+        } => play_character(
+            state,
+            instance_id,
+            PlayCharacterOptions {
+                enter_exerted: *enter_exerted,
+            },
+        ),
+        Move::Quest { instance_id } => quest(state, instance_id),
+        Move::Challenge {
+            attacker_id,
+            defender_id,
+        } => challenge(state, attacker_id, defender_id),
+        Move::Pass => Ok(()),
+    }
 }

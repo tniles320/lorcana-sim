@@ -1,5 +1,5 @@
 use super::events::{emit, Event};
-use super::state::{draw_card, GameState, Phase};
+use super::state::{draw_card, opponent_index, GameOver, GameOverReason, GameState, Phase};
 
 fn ready_phase(state: &mut GameState) {
     let player = &mut state.players[state.active_player];
@@ -21,9 +21,18 @@ fn set_phase(state: &mut GameState) {
 
 fn draw_phase(state: &mut GameState) {
     let is_first_turn_of_game = state.turn_number == 1 && state.active_player == 0;
-    if !is_first_turn_of_game {
-        draw_card(&mut state.players[state.active_player]);
+    if is_first_turn_of_game {
+        return;
     }
+    let active = state.active_player;
+    if state.players[active].deck.is_empty() {
+        state.game_over = Some(GameOver {
+            winner: opponent_index(active),
+            reason: GameOverReason::DeckOut,
+        });
+        return;
+    }
+    draw_card(&mut state.players[active]);
 }
 
 /// Runs Ready -> Set -> Draw for the active player and leaves state.phase at Main.

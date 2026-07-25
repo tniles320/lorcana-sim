@@ -39,6 +39,41 @@ pub struct GameState {
     /// Always 0 or 1 — indexes into `players`.
     pub active_player: usize,
     pub phase: Phase,
+    /// Set once the game has ended. `None` means still in progress.
+    pub game_over: Option<GameOver>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GameOverReason {
+    LoreVictory,
+    /// A player was required to draw and their deck was empty.
+    DeckOut,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GameOver {
+    pub winner: usize,
+    pub reason: GameOverReason,
+}
+
+pub const LORE_TO_WIN: i32 = 20;
+
+/// Checks whether either player has reached the lore threshold and, if so,
+/// records it on `state.game_over`. Idempotent — does nothing if the game
+/// has already ended (e.g. by deck-out, set elsewhere in `turn.rs`).
+pub fn check_lore_victory(state: &mut GameState) {
+    if state.game_over.is_some() {
+        return;
+    }
+    for (i, player) in state.players.iter().enumerate() {
+        if player.lore >= LORE_TO_WIN {
+            state.game_over = Some(GameOver {
+                winner: i,
+                reason: GameOverReason::LoreVictory,
+            });
+            return;
+        }
+    }
 }
 
 static INSTANCE_COUNTER: AtomicU64 = AtomicU64::new(0);
@@ -116,6 +151,7 @@ pub fn create_game(
         turn_number: 1,
         active_player: 0,
         phase: Phase::Ready,
+        game_over: None,
     }
 }
 

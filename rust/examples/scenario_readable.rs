@@ -72,6 +72,7 @@ fn main() {
         turn_number: 1,
         active_player: 0,
         phase: Phase::Main,
+        game_over: None,
     };
 
     println!("=== Lorcana Sim scenario ===");

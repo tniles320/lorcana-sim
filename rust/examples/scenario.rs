@@ -59,6 +59,7 @@ fn main() {
         turn_number: 1,
         active_player: 0,
         phase: Phase::Main,
+        game_over: None,
     };
 
     quest(&mut state, &bagheera_id).unwrap();
