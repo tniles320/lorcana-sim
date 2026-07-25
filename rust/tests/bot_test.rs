@@ -123,15 +123,78 @@ mod choose_move_tests {
     use super::*;
 
     #[test]
-    fn inks_the_cheapest_inkable_card_first() {
+    fn inks_the_least_reachable_card_when_theres_no_duplicate_pressure() {
         let mut state = new_game();
         let cheap = CardBuilder::new().inkwell(true).cost(1).build_instance();
         let expensive = CardBuilder::new().inkwell(true).cost(4).build_instance();
-        let cheap_id = cheap.instance_id.clone();
-        state.players[0].hand.push(expensive);
+        let expensive_id = expensive.instance_id.clone();
         state.players[0].hand.push(cheap);
+        state.players[0].hand.push(expensive);
 
-        assert_eq!(choose_move(&state), Move::Ink { instance_id: cheap_id });
+        // available_ink = 0, so the cost-4 card is much further from being
+        // playable than the cost-1 card -- more "dead" in hand right now,
+        // and thus the better one to convert to ink.
+        assert_eq!(
+            choose_move(&state),
+            Move::Ink {
+                instance_id: expensive_id
+            }
+        );
+    }
+
+    #[test]
+    fn prefers_inking_a_duplicate_over_a_similarly_unreachable_unique_card() {
+        let mut state = new_game();
+        let original = CardBuilder::new().name("Bagheera").cost(3).build_instance();
+        let duplicate = CardBuilder::new().name("Bagheera").cost(3).build_instance();
+        let unique = CardBuilder::new().name("Someone Else").cost(3).build_instance();
+        let original_id = original.instance_id.clone();
+        let duplicate_id = duplicate.instance_id.clone();
+        let unique_id = unique.instance_id.clone();
+        state.players[0].hand.push(original);
+        state.players[0].hand.push(duplicate);
+        state.players[0].hand.push(unique);
+
+        // All three cost the same (identical gap), but the two Bagheeras
+        // are duplicates of each other, so inking one of them scores
+        // higher than inking the unique card.
+        match choose_move(&state) {
+            Move::Ink { instance_id } => {
+                assert!(instance_id == original_id || instance_id == duplicate_id);
+                assert_ne!(instance_id, unique_id);
+            }
+            other => panic!("expected an Ink move, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn prefers_a_duplicate_over_a_slightly_less_reachable_unique_card() {
+        let mut state = new_game();
+        for _ in 0..3 {
+            state.players[0]
+                .inkwell
+                .push(CardBuilder::new().build_instance());
+        }
+        // available_ink = 3
+        let original = CardBuilder::new().name("Bagheera").cost(4).build_instance(); // gap 1, +2 dup = 3
+        let duplicate = CardBuilder::new().name("Bagheera").cost(4).build_instance(); // gap 1, +2 dup = 3
+        let unique = CardBuilder::new().name("Someone Else").cost(5).build_instance(); // gap 2
+        let original_id = original.instance_id.clone();
+        let duplicate_id = duplicate.instance_id.clone();
+        let unique_id = unique.instance_id.clone();
+        state.players[0].hand.push(original);
+        state.players[0].hand.push(duplicate);
+        state.players[0].hand.push(unique);
+
+        // The unique card has a bigger raw gap (2 vs 1), but the duplicate
+        // bonus outweighs that -- ties should go to thinning duplicates.
+        match choose_move(&state) {
+            Move::Ink { instance_id } => {
+                assert!(instance_id == original_id || instance_id == duplicate_id);
+                assert_ne!(instance_id, unique_id);
+            }
+            other => panic!("expected an Ink move, got {other:?}"),
+        }
     }
 
     #[test]

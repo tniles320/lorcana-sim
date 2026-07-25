@@ -25,6 +25,33 @@ fn threat_value(card: &CardInstance) -> i32 {
     lore * 3 + strength + willpower
 }
 
+/// How many other copies of this exact card (same name and version) are
+/// also sitting in hand -- extra copies beyond the first are increasingly
+/// expendable as ink.
+fn duplicate_count(hand: &[CardInstance], card: &CardInstance) -> i32 {
+    hand.iter()
+        .filter(|c| {
+            c.instance_id != card.instance_id
+                && c.card.name == card.card.name
+                && c.card.version == card.card.version
+        })
+        .count() as i32
+}
+
+/// How good an ink candidate this card is: the further its cost is beyond
+/// what we can already afford, the more "dead" it is in hand right now
+/// (worth converting rather than waiting many turns to play it); each
+/// duplicate copy still in hand adds to that, since only so many copies of
+/// the same card are useful to hold onto at once. This one formula covers
+/// both "ink the expensive card I can't play for a while" (small inkwell,
+/// big gap) and "ink the redundant extra copy" (large inkwell, gaps shrink
+/// toward zero for everything, so duplicates become the deciding factor).
+fn ink_score(card: &CardInstance, available_ink: i32, hand: &[CardInstance]) -> i32 {
+    let gap = (card.card.cost - available_ink).max(0);
+    let duplicates = duplicate_count(hand, card);
+    gap + duplicates * 2
+}
+
 /// Net value of a specific challenge: the threat removed (full credit for
 /// a kill, partial credit proportional to the chip damage otherwise) minus
 /// the cost of losing the attacker, if this exchange would kill it too.
@@ -63,7 +90,7 @@ pub fn choose_move(state: &GameState) -> Move {
         c.card.card_type.contains(&CardType::Character) && c.card.cost <= available_ink
     };
 
-    // 1. Ink the cheapest inkable card in hand that we couldn't already
+    // 1. Ink the best-scoring inkable card in hand that we couldn't already
     //    afford to play -- inking a card we could play right now would
     //    throw away a real play just to gain ink we may not even need yet.
     if !active.inked_this_turn
@@ -71,7 +98,7 @@ pub fn choose_move(state: &GameState) -> Move {
             .hand
             .iter()
             .filter(|c| c.card.inkwell && !currently_playable(c))
-            .min_by_key(|c| c.card.cost)
+            .max_by_key(|c| ink_score(c, available_ink, &active.hand))
     {
         return Move::Ink {
             instance_id: card.instance_id.clone(),
