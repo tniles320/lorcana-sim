@@ -1,7 +1,7 @@
 mod common;
 
 use common::CardBuilder;
-use lorcana_sim::bot::choose_move;
+use lorcana_sim::bot::{choose_move, decide_mulligan};
 use lorcana_sim::cards::Card;
 use lorcana_sim::engine::actions::{legal_moves, Move};
 use lorcana_sim::engine::events::clear_handlers;
@@ -398,5 +398,48 @@ mod choose_move_tests {
         let mut state = new_game();
         state.players[0].inked_this_turn = true;
         assert_eq!(choose_move(&state), Move::Pass);
+    }
+}
+
+mod decide_mulligan_tests {
+    use super::*;
+
+    #[test]
+    fn keeps_cards_costing_four_or_less() {
+        let hand = vec![
+            CardBuilder::new().cost(1).build_instance(),
+            CardBuilder::new().cost(4).build_instance(),
+        ];
+        assert!(decide_mulligan(&hand).is_empty());
+    }
+
+    #[test]
+    fn mulligans_cards_costing_five_or_more() {
+        let five = CardBuilder::new().cost(5).build_instance();
+        let five_id = five.instance_id.clone();
+        let hand = vec![CardBuilder::new().cost(3).build_instance(), five];
+
+        assert_eq!(decide_mulligan(&hand), vec![five_id]);
+    }
+
+    #[test]
+    fn keeps_a_single_uninkable_card() {
+        let hand = vec![
+            CardBuilder::new().cost(2).inkwell(false).build_instance(),
+            CardBuilder::new().cost(2).inkwell(true).build_instance(),
+        ];
+        assert!(decide_mulligan(&hand).is_empty());
+    }
+
+    #[test]
+    fn mulligans_extra_uninkable_cards_beyond_the_cheapest() {
+        let cheap_uninkable = CardBuilder::new().cost(1).inkwell(false).build_instance();
+        let expensive_uninkable = CardBuilder::new().cost(4).inkwell(false).build_instance();
+        let expensive_uninkable_id = expensive_uninkable.instance_id.clone();
+        let hand = vec![cheap_uninkable, expensive_uninkable];
+
+        // Both cost within the keepable range, but only one uninkable card
+        // should be kept -- the cheaper (more soon-playable) one.
+        assert_eq!(decide_mulligan(&hand), vec![expensive_uninkable_id]);
     }
 }

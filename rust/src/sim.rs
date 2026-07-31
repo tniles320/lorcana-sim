@@ -3,10 +3,10 @@
 //! see examples/full_game.rs for that). Exists so a batch runner can play
 //! many games without re-deriving the core loop each time.
 
-use crate::bot::choose_move;
+use crate::bot::{choose_move, decide_mulligan};
 use crate::cards::Card;
 use crate::engine::actions::apply_move;
-use crate::engine::state::{check_lore_victory, create_game, GameOver};
+use crate::engine::state::{check_lore_victory, create_game, mulligan, GameOver};
 use crate::engine::turn::{end_turn, start_game};
 
 /// Backstop against an actual infinite-loop bug -- a real game with these
@@ -29,6 +29,10 @@ pub fn play_game(
     rng: &mut impl FnMut() -> f64,
 ) -> GameResult {
     let mut state = create_game(deck_a, deck_b, rng);
+    for player in state.players.iter_mut() {
+        let to_mulligan = decide_mulligan(&player.hand);
+        mulligan(player, &to_mulligan, rng);
+    }
     start_game(&mut state);
 
     let mut turn_count: u32 = 0;

@@ -117,6 +117,31 @@ pub fn draw_card(player: &mut PlayerState) -> Option<String> {
     Some(instance_id)
 }
 
+/// Once-per-game opening hand mulligan: the named cards are set aside, the
+/// same number of fresh cards are drawn from the deck as it already stood
+/// (so a replacement draw can never immediately redraw a card just put
+/// back), and only then are the set-aside cards shuffled back into the
+/// remaining deck for later in the game. Real Lorcana has each player
+/// choose their whole set at once, not iteratively -- this mirrors that by
+/// taking the full list of ids up front rather than looping.
+pub fn mulligan(player: &mut PlayerState, instance_ids: &[String], rng: &mut impl FnMut() -> f64) {
+    let mut put_back = Vec::new();
+    player.hand.retain(|c| {
+        if instance_ids.contains(&c.instance_id) {
+            put_back.push(c.clone());
+            false
+        } else {
+            true
+        }
+    });
+    let redraw_count = put_back.len();
+    for _ in 0..redraw_count {
+        draw_card(player);
+    }
+    player.deck.extend(put_back);
+    player.deck = shuffle(&player.deck, rng);
+}
+
 fn create_player(id: &str, deck_cards: Vec<Card>, rng: &mut impl FnMut() -> f64) -> PlayerState {
     let shuffled = shuffle(&deck_cards, rng);
     let deck = shuffled.into_iter().map(create_instance).collect();

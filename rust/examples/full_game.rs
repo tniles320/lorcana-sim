@@ -5,11 +5,11 @@
 //!
 //! Run: cargo run --example full_game
 
-use lorcana_sim::bot::choose_move;
+use lorcana_sim::bot::{choose_move, decide_mulligan};
 use lorcana_sim::cards::load_deck;
 use lorcana_sim::engine::actions::{apply_move, Move};
 use lorcana_sim::engine::state::{
-    check_lore_victory, create_game, opponent_index, system_rng, CardInstance, GameState,
+    check_lore_victory, create_game, mulligan, opponent_index, system_rng, CardInstance, GameState,
 };
 use lorcana_sim::engine::turn::{end_turn, start_game};
 
@@ -71,9 +71,25 @@ fn main() {
 
     let mut rng = system_rng();
     let mut state = create_game(amber, steel, &mut rng);
-    start_game(&mut state);
 
     println!("=== Full game: Player 1 (amber-vanilla-test) vs Player 2 (steel-vanilla-test) ===\n");
+
+    for (i, player) in state.players.iter_mut().enumerate() {
+        let to_mulligan = decide_mulligan(&player.hand);
+        if to_mulligan.is_empty() {
+            println!("{}: keeps opening hand", player_label(i));
+        } else {
+            let names: Vec<String> = to_mulligan
+                .iter()
+                .map(|id| find_name(&player.hand, id))
+                .collect();
+            println!("{}: mulligans {}", player_label(i), names.join(", "));
+            mulligan(player, &to_mulligan, &mut rng);
+        }
+    }
+    println!();
+
+    start_game(&mut state);
 
     let mut turn_count: u32 = 0;
 

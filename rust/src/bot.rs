@@ -13,6 +13,46 @@ use crate::engine::actions::{
 };
 use crate::engine::state::{opponent_index, CardInstance, GameState};
 
+/// Above this cost, a card generally isn't worth keeping in an opening
+/// hand -- we want plays in the first 3-4 turns. Deck/strategy-specific
+/// exceptions (a control shell wanting a big finisher) aren't modeled yet.
+const MULLIGAN_MAX_KEEPABLE_COST: i32 = 4;
+
+/// More than this many uninkable cards in an opening hand is a real risk:
+/// an uninkable card that doesn't get played can never become ink either,
+/// so it's just dead until drawn into naturally.
+const MAX_UNINKABLE_IN_OPENING_HAND: usize = 1;
+
+/// Decides which opening-hand cards to mulligan (put back and redraw).
+/// Cost-based for now: put back anything above the keepable curve, and if
+/// more than one remaining card is uninkable, keep only the cheapest of
+/// those and put back the rest even though their cost was otherwise fine.
+pub fn decide_mulligan(hand: &[CardInstance]) -> Vec<String> {
+    let mut to_mulligan: Vec<String> = hand
+        .iter()
+        .filter(|c| c.card.cost > MULLIGAN_MAX_KEEPABLE_COST)
+        .map(|c| c.instance_id.clone())
+        .collect();
+
+    let mut remaining_uninkable: Vec<&CardInstance> = hand
+        .iter()
+        .filter(|c| !to_mulligan.contains(&c.instance_id))
+        .filter(|c| !c.card.inkwell)
+        .collect();
+
+    if remaining_uninkable.len() > MAX_UNINKABLE_IN_OPENING_HAND {
+        remaining_uninkable.sort_by_key(|c| c.card.cost);
+        for c in remaining_uninkable
+            .into_iter()
+            .skip(MAX_UNINKABLE_IN_OPENING_HAND)
+        {
+            to_mulligan.push(c.instance_id.clone());
+        }
+    }
+
+    to_mulligan
+}
+
 /// How valuable/dangerous a character is -- used both to size up an
 /// opposing threat worth attacking and to weigh the cost of losing one of
 /// our own characters in a trade. Lore generation counts for the most
