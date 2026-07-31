@@ -10,6 +10,7 @@ use lorcana_sim::cards::load_deck;
 use lorcana_sim::engine::actions::{apply_move, Move};
 use lorcana_sim::engine::state::{
     check_lore_victory, create_game, mulligan, opponent_index, system_rng, CardInstance, GameState,
+    PlayerState,
 };
 use lorcana_sim::engine::turn::{end_turn, start_game};
 
@@ -73,6 +74,38 @@ fn damage_and_banish_status(
         (c.damage - damage_before, true)
     } else {
         (0, false)
+    }
+}
+
+/// "Name (cost, strength/willpower, ready/exerted, damage if any)" -- shows
+/// the stats the bot actually reasons about, so it's clear why a given
+/// character was judged safe or risky to act with.
+fn describe_character(c: &CardInstance) -> String {
+    let status = if c.exerted { "exerted" } else { "ready" };
+    let dmg = if c.damage > 0 {
+        format!(", {} dmg", c.damage)
+    } else {
+        String::new()
+    };
+    format!(
+        "{} ({}c {}/{}, {status}{dmg})",
+        c.card.name,
+        c.card.cost,
+        c.card.strength.unwrap_or(0),
+        c.card.willpower.unwrap_or(0)
+    )
+}
+
+fn describe_board(player: &PlayerState) -> String {
+    if player.play.is_empty() {
+        "(empty)".to_string()
+    } else {
+        player
+            .play
+            .iter()
+            .map(describe_character)
+            .collect::<Vec<_>>()
+            .join(", ")
     }
 }
 
@@ -213,6 +246,12 @@ fn main() {
                 break;
             }
         }
+
+        println!(
+            "  Board -- P1: {} | P2: {}\n",
+            describe_board(&state.players[0]),
+            describe_board(&state.players[1])
+        );
 
         if state.game_over.is_some() {
             break;
