@@ -57,6 +57,25 @@ fn describe_move(state: &GameState, mv: &Move) -> String {
     }
 }
 
+/// Damage dealt to a character by this specific hit (current damage minus
+/// what it had going in) and whether it was banished -- checks `play` first
+/// (survived) then `discard` (banished; the instance still holds its final
+/// damage value there since `challenge()` just moves it, doesn't reset it).
+fn damage_and_banish_status(
+    play: &[CardInstance],
+    discard: &[CardInstance],
+    id: &str,
+    damage_before: i32,
+) -> (i32, bool) {
+    if let Some(c) = play.iter().find(|c| c.instance_id == id) {
+        (c.damage - damage_before, false)
+    } else if let Some(c) = discard.iter().find(|c| c.instance_id == id) {
+        (c.damage - damage_before, true)
+    } else {
+        (0, false)
+    }
+}
+
 fn player_label(index: usize) -> &'static str {
     if index == 0 {
         "Player 1"
@@ -113,12 +132,77 @@ fn main() {
             let description = describe_move(&state, &mv);
             let is_pass = matches!(mv, Move::Pass);
 
+            // For challenges, snapshot pre-hit damage so we can report the
+            // delta (and banish status) once the move resolves.
+            let challenge_snapshot = if let Move::Challenge {
+                attacker_id,
+                defender_id,
+            } = &mv
+            {
+                let active = &state.players[state.active_player];
+                let opponent = &state.players[opponent_index(state.active_player)];
+                let attacker_damage_before = active
+                    .play
+                    .iter()
+                    .find(|c| &c.instance_id == attacker_id)
+                    .map(|c| c.damage)
+                    .unwrap_or(0);
+                let defender_damage_before = opponent
+                    .play
+                    .iter()
+                    .find(|c| &c.instance_id == defender_id)
+                    .map(|c| c.damage)
+                    .unwrap_or(0);
+                Some((
+                    attacker_id.clone(),
+                    defender_id.clone(),
+                    attacker_damage_before,
+                    defender_damage_before,
+                ))
+            } else {
+                None
+            };
+
             apply_move(&mut state, &mv).expect("bot only ever chooses legal moves");
+
+            let combat_detail = challenge_snapshot.map(
+                |(attacker_id, defender_id, attacker_damage_before, defender_damage_before)| {
+                    let active = &state.players[state.active_player];
+                    let opponent = &state.players[opponent_index(state.active_player)];
+                    let (defender_dmg, defender_banished) = damage_and_banish_status(
+                        &opponent.play,
+                        &opponent.discard,
+                        &defender_id,
+                        defender_damage_before,
+                    );
+                    let (attacker_dmg, attacker_banished) = damage_and_banish_status(
+                        &active.play,
+                        &active.discard,
+                        &attacker_id,
+                        attacker_damage_before,
+                    );
+                    format!(
+                        " [deals {defender_dmg} dmg{}, takes {attacker_dmg} dmg{}]",
+                        if defender_banished {
+                            " -- BANISHED"
+                        } else {
+                            ""
+                        },
+                        if attacker_banished {
+                            " -- BANISHED"
+                        } else {
+                            ""
+                        }
+                    )
+                },
+            );
+
             if !is_pass {
                 println!(
-                    "[Turn {}] {}: {description} (lore {}-{})",
+                    "[Turn {}] {}: {description}{} (lore {}-{})",
                     state.turn_number,
                     player_label(state.active_player),
+                    combat_detail.unwrap_or_default(),
                     state.players[0].lore,
                     state.players[1].lore
                 );
