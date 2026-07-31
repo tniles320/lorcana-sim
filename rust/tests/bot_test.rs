@@ -399,6 +399,119 @@ mod choose_move_tests {
         state.players[0].inked_this_turn = true;
         assert_eq!(choose_move(&state), Move::Pass);
     }
+
+    #[test]
+    fn avoids_questing_into_a_safe_kill_setup() {
+        let mut state = new_game();
+        state.players[0].inked_this_turn = true;
+
+        let character = CardBuilder::new()
+            .strength(2)
+            .willpower(5)
+            .lore_value(2)
+            .build_instance();
+        state.players[0].play.push(character);
+
+        // Strength 5 kills through the character's 5 willpower; willpower
+        // 10 easily survives the 2-strength counter-hit -- a safe kill for
+        // the opponent once the character is exerted from questing.
+        let threat = CardBuilder::new().strength(5).willpower(10).build_instance();
+        state.players[1].play.push(threat);
+
+        assert_eq!(choose_move(&state), Move::Pass);
+    }
+
+    #[test]
+    fn quests_into_risk_when_close_enough_to_winning() {
+        let mut state = new_game();
+        state.players[0].inked_this_turn = true;
+        state.players[0].lore = 15; // 15 + 2 = 17, within NEAR_WIN_MARGIN of LORE_TO_WIN (20)
+
+        let character = CardBuilder::new()
+            .strength(2)
+            .willpower(5)
+            .lore_value(2)
+            .build_instance();
+        let character_id = character.instance_id.clone();
+        state.players[0].play.push(character);
+
+        let threat = CardBuilder::new().strength(5).willpower(10).build_instance();
+        state.players[1].play.push(threat);
+
+        assert_eq!(
+            choose_move(&state),
+            Move::Quest {
+                instance_id: character_id
+            }
+        );
+    }
+
+    #[test]
+    fn avoids_a_risky_chip_challenge_when_it_would_expose_the_attacker() {
+        let mut state = new_game();
+        state.players[0].inked_this_turn = true;
+
+        let attacker = CardBuilder::new()
+            .strength(1)
+            .willpower(6)
+            .lore_value(1)
+            .build_instance();
+        let attacker_id = attacker.instance_id.clone();
+        state.players[0].play.push(attacker);
+
+        let mut defender = CardBuilder::new()
+            .strength(1)
+            .willpower(8)
+            .lore_value(3)
+            .build_instance();
+        defender.exerted = true;
+        state.players[1].play.push(defender);
+
+        // Chipping the defender leaves the attacker at 1 damage (5
+        // willpower remaining), which big_threat's strength 5 can then
+        // safely finish off next turn. Questing instead leaves the
+        // attacker undamaged (6 willpower remaining), which strength 5
+        // can't punch through -- so questing is the safer, higher-scoring
+        // choice even though the chip damage looked appealing in isolation.
+        let big_threat = CardBuilder::new().strength(5).willpower(10).build_instance();
+        state.players[1].play.push(big_threat);
+
+        assert_eq!(
+            choose_move(&state),
+            Move::Quest {
+                instance_id: attacker_id
+            }
+        );
+    }
+
+    #[test]
+    fn avoids_even_a_good_kill_if_it_exposes_the_attacker_to_a_bigger_threat() {
+        let mut state = new_game();
+        state.players[0].inked_this_turn = true;
+
+        let attacker = CardBuilder::new()
+            .strength(5)
+            .willpower(4)
+            .lore_value(1)
+            .build_instance();
+        state.players[0].play.push(attacker);
+
+        let mut defender = CardBuilder::new().strength(1).willpower(4).build_instance();
+        defender.exerted = true;
+        state.players[1].play.push(defender);
+
+        // The challenge kills the defender and the attacker survives it
+        // (1 damage taken, 3 willpower remaining), but big_threat's
+        // strength 4 can then safely finish it off regardless -- and
+        // questing instead doesn't help either, since the attacker's own
+        // willpower (4) is already within big_threat's reach even
+        // undamaged. Neither option nets positive, so the bot should hold
+        // back entirely rather than trade into a bigger loss next turn.
+        let big_threat = CardBuilder::new().strength(4).willpower(10).build_instance();
+        state.players[1].play.push(big_threat);
+
+        assert_eq!(choose_move(&state), Move::Pass);
+    }
 }
 
 mod decide_mulligan_tests {

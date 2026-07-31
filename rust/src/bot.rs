@@ -11,7 +11,12 @@ use crate::cards::CardType;
 use crate::engine::actions::{
     can_challenge_as_attacker, can_quest, keyword_value, legal_challenge_targets, Move,
 };
-use crate::engine::state::{opponent_index, CardInstance, GameState};
+use crate::engine::state::{opponent_index, CardInstance, GameState, PlayerState, LORE_TO_WIN};
+
+/// Within this many lore points of winning, stop worrying about exposing
+/// characters to retaliation and just push for the win -- a first guess,
+/// not a derived number.
+const NEAR_WIN_MARGIN: i32 = 3;
 
 /// Above this cost, a card generally isn't worth keeping in an opening
 /// hand -- we want plays in the first 3-4 turns. Deck/strategy-specific
@@ -92,12 +97,22 @@ fn ink_score(card: &CardInstance, available_ink: i32, hand: &[CardInstance]) -> 
     gap + duplicates * 2
 }
 
-/// Net value of a specific challenge: the threat removed (full credit for
-/// a kill, partial credit proportional to the chip damage otherwise) minus
-/// the cost of losing the attacker, if this exchange would kill it too.
-/// Combat in Lorcana is fully deterministic given stats, so "does the
-/// attacker die" is a plain fact here, not a probability to weigh.
-fn challenge_score(attacker: &CardInstance, defender: &CardInstance) -> i32 {
+struct ChallengeOutcome {
+    /// Threat removed (full credit for a kill, partial credit proportional
+    /// to the chip damage otherwise) minus the cost of losing the attacker,
+    /// if this exchange kills it too.
+    net_score: i32,
+    attacker_dies: bool,
+    /// The attacker's damage value after this fight resolves -- relevant
+    /// even when it survives, since that's the exposure it carries into
+    /// the opponent's next turn.
+    attacker_damage_after: i32,
+}
+
+/// Evaluates a specific challenge. Combat in Lorcana is fully deterministic
+/// given stats, so "does the attacker die" is a plain fact here, not a
+/// probability to weigh.
+fn evaluate_challenge(attacker: &CardInstance, defender: &CardInstance) -> ChallengeOutcome {
     let attacker_strength =
         attacker.card.strength.unwrap_or(0) + keyword_value(attacker, "Challenger");
     let defender_resist = keyword_value(defender, "Resist");
@@ -108,8 +123,8 @@ fn challenge_score(attacker: &CardInstance, defender: &CardInstance) -> i32 {
     let defender_strength = defender.card.strength.unwrap_or(0);
     let attacker_resist = keyword_value(attacker, "Resist");
     let damage_to_attacker = (defender_strength - attacker_resist).max(0);
-    let attacker_dies =
-        attacker.damage + damage_to_attacker >= attacker.card.willpower.unwrap_or(0).max(1);
+    let attacker_damage_after = attacker.damage + damage_to_attacker;
+    let attacker_dies = attacker_damage_after >= attacker.card.willpower.unwrap_or(0).max(1);
 
     let value_removed = if kills_defender {
         threat_value(defender)
@@ -118,7 +133,62 @@ fn challenge_score(attacker: &CardInstance, defender: &CardInstance) -> i32 {
     };
     let cost = if attacker_dies { threat_value(attacker) } else { 0 };
 
-    value_removed - cost
+    ChallengeOutcome {
+        net_score: value_removed - cost,
+        attacker_dies,
+        attacker_damage_after,
+    }
+}
+
+/// Would the opponent have a free (attacker-survives) kill against a
+/// character of ours with these stats, once it's exposed (exerted) on
+/// their turn? Checks every opposing character regardless of its current
+/// exerted/wet-ink state, since all of them will be readied and past wet
+/// ink by the time the opponent's own next turn starts. Only considers a
+/// single attacker at a time -- not combinations of smaller ones ganging
+/// up -- and only the opponent's current board, not hypothetical future
+/// plays we can't see coming (their hand is hidden).
+fn opponent_has_safe_kill(
+    my_strength: i32,
+    my_willpower_remaining: i32,
+    my_resist: i32,
+    opponent: &PlayerState,
+) -> bool {
+    opponent.play.iter().any(|enemy| {
+        let enemy_strength = enemy.card.strength.unwrap_or(0) + keyword_value(enemy, "Challenger");
+        let enemy_resist = keyword_value(enemy, "Resist");
+        let damage_to_me = (enemy_strength - my_resist).max(0);
+        let they_kill_me = damage_to_me >= my_willpower_remaining;
+
+        let damage_to_them = (my_strength - enemy_resist).max(0);
+        let enemy_willpower = enemy.card.willpower.unwrap_or(0).max(1);
+        let i_kill_them_back = enemy.damage + damage_to_them >= enemy_willpower;
+
+        they_kill_me && !i_kill_them_back
+    })
+}
+
+/// The expected cost of leaving `character` exposed (exerted) given its
+/// willpower remaining after whatever action we're scoring: `character`'s
+/// own threat_value if the opponent has a safe kill against it, unless
+/// `lore_after_action` is close enough to winning that board safety no
+/// longer matters more than closing out the game.
+fn retaliation_risk(
+    character: &CardInstance,
+    willpower_remaining: i32,
+    opponent: &PlayerState,
+    lore_after_action: i32,
+) -> i32 {
+    if lore_after_action >= LORE_TO_WIN - NEAR_WIN_MARGIN {
+        return 0;
+    }
+    let my_strength = character.card.strength.unwrap_or(0);
+    let my_resist = keyword_value(character, "Resist");
+    if opponent_has_safe_kill(my_strength, willpower_remaining, my_resist, opponent) {
+        threat_value(character)
+    } else {
+        0
+    }
 }
 
 /// Picks a single move for the active player. Call in a loop, applying each
@@ -170,8 +240,17 @@ pub fn choose_move(state: &GameState) -> Move {
 
     for character in &active.play {
         if can_quest(character) {
+            let lore_gained = character.card.lore_value.unwrap_or(0);
+            let willpower_remaining =
+                character.card.willpower.unwrap_or(0) - character.damage;
+            let risk = retaliation_risk(
+                character,
+                willpower_remaining,
+                opponent,
+                active.lore + lore_gained,
+            );
             consider(
-                character.card.lore_value.unwrap_or(0),
+                lore_gained - risk,
                 Move::Quest {
                     instance_id: character.instance_id.clone(),
                 },
@@ -184,8 +263,16 @@ pub fn choose_move(state: &GameState) -> Move {
                     .iter()
                     .find(|c| c.instance_id == target_id)
                     .expect("legal_challenge_targets only returns ids present in opponent.play");
+                let outcome = evaluate_challenge(character, defender);
+                let risk = if outcome.attacker_dies {
+                    0 // already priced into net_score's cost term
+                } else {
+                    let willpower_remaining = character.card.willpower.unwrap_or(0)
+                        - outcome.attacker_damage_after;
+                    retaliation_risk(character, willpower_remaining, opponent, active.lore)
+                };
                 consider(
-                    challenge_score(character, defender),
+                    outcome.net_score - risk,
                     Move::Challenge {
                         attacker_id: character.instance_id.clone(),
                         defender_id: target_id,
