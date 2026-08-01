@@ -319,7 +319,7 @@ pub fn choose_move(state: &GameState) -> Move {
             );
         }
         if can_challenge_as_attacker(character) {
-            for target_id in legal_challenge_targets(state, state.active_player) {
+            for target_id in legal_challenge_targets(state, state.active_player, character) {
                 let defender = opponent
                     .play
                     .iter()

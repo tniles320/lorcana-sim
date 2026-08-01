@@ -178,7 +178,8 @@ mod challenge_tests {
         state.players[1].play.push(ready);
         state.players[1].play.push(exerted);
 
-        let targets = legal_challenge_targets(&state, 0);
+        let attacker = CardBuilder::new().build_instance();
+        let targets = legal_challenge_targets(&state, 0, &attacker);
         assert_eq!(targets, vec![exerted_id]);
     }
 
@@ -193,8 +194,55 @@ mod challenge_tests {
         state.players[1].play.push(exerted_normal);
         state.players[1].play.push(exerted_bodyguard);
 
-        let targets = legal_challenge_targets(&state, 0);
+        let attacker = CardBuilder::new().build_instance();
+        let targets = legal_challenge_targets(&state, 0, &attacker);
         assert_eq!(targets, vec![bodyguard_id]);
+    }
+
+    #[test]
+    fn evasive_defender_cannot_be_targeted_by_a_non_evasive_attacker() {
+        let mut state = new_game();
+        let mut evasive_defender = CardBuilder::new().keywords(&["Evasive"]).build_instance();
+        evasive_defender.exerted = true;
+        state.players[1].play.push(evasive_defender);
+
+        let attacker = CardBuilder::new().build_instance();
+        let targets = legal_challenge_targets(&state, 0, &attacker);
+        assert!(targets.is_empty());
+    }
+
+    #[test]
+    fn evasive_defender_can_be_targeted_by_an_evasive_attacker() {
+        let mut state = new_game();
+        let mut evasive_defender = CardBuilder::new().keywords(&["Evasive"]).build_instance();
+        evasive_defender.exerted = true;
+        let defender_id = evasive_defender.instance_id.clone();
+        state.players[1].play.push(evasive_defender);
+
+        let attacker = CardBuilder::new().keywords(&["Evasive"]).build_instance();
+        let targets = legal_challenge_targets(&state, 0, &attacker);
+        assert_eq!(targets, vec![defender_id]);
+    }
+
+    #[test]
+    fn bodyguard_forcing_is_skipped_if_the_only_bodyguard_is_unreachable_via_evasive() {
+        let mut state = new_game();
+        let mut evasive_bodyguard = CardBuilder::new()
+            .keywords(&["Evasive", "Bodyguard"])
+            .build_instance();
+        evasive_bodyguard.exerted = true;
+        let mut plain_exerted = CardBuilder::new().build_instance();
+        plain_exerted.exerted = true;
+        let plain_exerted_id = plain_exerted.instance_id.clone();
+        state.players[1].play.push(evasive_bodyguard);
+        state.players[1].play.push(plain_exerted);
+
+        // The attacker can't reach the Evasive Bodyguard at all, so it's
+        // not "able" to choose it -- the plain exerted character is the
+        // only legal target.
+        let attacker = CardBuilder::new().build_instance();
+        let targets = legal_challenge_targets(&state, 0, &attacker);
+        assert_eq!(targets, vec![plain_exerted_id]);
     }
 
     #[test]

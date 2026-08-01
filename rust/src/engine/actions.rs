@@ -174,15 +174,28 @@ pub fn quest(state: &mut GameState, instance_id: &str) -> Result<(), IllegalActi
     Ok(())
 }
 
-/// Opposing characters legal to challenge: must be exerted, and a Bodyguard
-/// character must be chosen if the opponent has any exerted Bodyguard characters.
-/// Returns instance ids rather than references, since Rust can't cheaply hand
-/// back borrowed `&CardInstance`s tied to `state`'s lifetime here without
-/// complicating every call site.
-pub fn legal_challenge_targets(state: &GameState, attacker_index: usize) -> Vec<String> {
+/// Opposing characters legal for `attacker` to challenge: must be exerted;
+/// if the defender has Evasive, `attacker` must also have Evasive to reach
+/// it at all; and among whatever's reachable, a Bodyguard character must
+/// be chosen if one is available (Bodyguard's "if able" naturally respects
+/// the Evasive restriction, since it's applied first). Returns instance
+/// ids rather than references, since Rust can't cheaply hand back borrowed
+/// `&CardInstance`s tied to `state`'s lifetime here without complicating
+/// every call site.
+pub fn legal_challenge_targets(
+    state: &GameState,
+    attacker_index: usize,
+    attacker: &CardInstance,
+) -> Vec<String> {
     let opponent = &state.players[opponent_index(attacker_index)];
-    let exerted: Vec<&CardInstance> = opponent.play.iter().filter(|c| c.exerted).collect();
-    let bodyguards: Vec<&CardInstance> = exerted
+    let attacker_has_evasive = has_keyword(attacker, "Evasive");
+    let reachable: Vec<&CardInstance> = opponent
+        .play
+        .iter()
+        .filter(|c| c.exerted)
+        .filter(|c| !has_keyword(c, "Evasive") || attacker_has_evasive)
+        .collect();
+    let bodyguards: Vec<&CardInstance> = reachable
         .iter()
         .copied()
         .filter(|c| has_keyword(c, "Bodyguard"))
@@ -190,7 +203,7 @@ pub fn legal_challenge_targets(state: &GameState, attacker_index: usize) -> Vec<
     let targets = if !bodyguards.is_empty() {
         bodyguards
     } else {
-        exerted
+        reachable
     };
     targets.iter().map(|c| c.instance_id.clone()).collect()
 }
@@ -217,7 +230,7 @@ pub fn challenge(
     let attacker_index = state.active_player;
     let defender_index = opponent_index(attacker_index);
 
-    {
+    let legal_ids = {
         let attacker_player = &state.players[attacker_index];
         let attacker = attacker_player
             .play
@@ -235,13 +248,13 @@ pub fn challenge(
         {
             return Err(err("Defender not in play"));
         }
-    }
+        legal_challenge_targets(state, attacker_index, attacker)
+    };
 
-    let legal_ids = legal_challenge_targets(state, attacker_index);
     if !legal_ids.iter().any(|id| id == defender_id) {
         return Err(err(
-            "Must challenge an exerted character; a Bodyguard character must be \
-             chosen if the opponent has one exerted",
+            "Must challenge a legal target: exerted, reachable given Evasive, \
+             and a Bodyguard character must be chosen if one is available",
         ));
     }
 
@@ -358,7 +371,7 @@ pub fn legal_moves(state: &GameState) -> Vec<Move> {
 
     for card in &player.play {
         if can_challenge_as_attacker(card) {
-            for target_id in legal_challenge_targets(state, state.active_player) {
+            for target_id in legal_challenge_targets(state, state.active_player, card) {
                 moves.push(Move::Challenge {
                     attacker_id: card.instance_id.clone(),
                     defender_id: target_id,
