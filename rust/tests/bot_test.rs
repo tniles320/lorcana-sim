@@ -607,6 +607,10 @@ mod decide_mulligan_tests {
     #[test]
     fn keeps_a_single_uninkable_card() {
         let hand = vec![
+            // A cost-1 card present keeps curve-smoothing from also
+            // touching the two cost-2 cards below, isolating this test to
+            // just the uninkable-count rule.
+            CardBuilder::new().cost(1).build_instance(),
             CardBuilder::new().cost(2).inkwell(false).build_instance(),
             CardBuilder::new().cost(2).inkwell(true).build_instance(),
         ];
@@ -623,5 +627,49 @@ mod decide_mulligan_tests {
         // Both cost within the keepable range, but only one uninkable card
         // should be kept -- the cheaper (more soon-playable) one.
         assert_eq!(decide_mulligan(&hand), vec![expensive_uninkable_id]);
+    }
+
+    #[test]
+    fn thins_a_redundant_mid_cost_card_when_there_is_no_cost_one() {
+        let keep = CardBuilder::new().cost(2).build_instance();
+        let extra = CardBuilder::new().cost(2).build_instance();
+        let extra_id = extra.instance_id.clone();
+        let hand = vec![keep, extra];
+
+        // No cost-1 card at all -- thin the redundant cost-2 for a better
+        // shot at drawing into a 1-drop, even though it's not a duplicate
+        // of the other cost-2 card by name.
+        assert_eq!(decide_mulligan(&hand), vec![extra_id]);
+    }
+
+    #[test]
+    fn keeps_one_of_each_cost_tier_when_thinning_for_a_cost_one() {
+        let keep_two = CardBuilder::new().cost(2).build_instance();
+        let extra_two = CardBuilder::new().cost(2).build_instance();
+        let keep_three = CardBuilder::new().cost(3).build_instance();
+        let extra_three = CardBuilder::new().cost(3).build_instance();
+        let extra_two_id = extra_two.instance_id.clone();
+        let extra_three_id = extra_three.instance_id.clone();
+        let hand = vec![keep_two, extra_two, keep_three, extra_three];
+
+        // Mulliganing 2 cards here (one from each cost tier) at once is
+        // the intended, normal behavior for this rule -- not a red flag.
+        let mut result = decide_mulligan(&hand);
+        result.sort();
+        let mut expected = vec![extra_two_id, extra_three_id];
+        expected.sort();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn does_not_thin_mid_cost_cards_when_a_cost_one_is_present() {
+        let hand = vec![
+            CardBuilder::new().cost(1).build_instance(),
+            CardBuilder::new().cost(2).build_instance(),
+            CardBuilder::new().cost(2).build_instance(),
+        ];
+
+        // Already have a 1-drop, so the two cost-2 cards are left alone.
+        assert!(decide_mulligan(&hand).is_empty());
     }
 }

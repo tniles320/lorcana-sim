@@ -2,7 +2,7 @@ mod common;
 
 use common::CardBuilder;
 use lorcana_sim::cards::load_deck;
-use lorcana_sim::engine::state::create_game;
+use lorcana_sim::engine::state::{create_game, roll_for_first, system_rng};
 
 fn deck_of(size: usize) -> Vec<lorcana_sim::cards::Card> {
     (0..size).map(|_| CardBuilder::new().build()).collect()
@@ -72,4 +72,22 @@ fn loads_the_real_test_decks_and_builds_a_60_card_game() {
     let state = create_game(amber, steel, &mut rng);
     assert_eq!(state.players[0].hand.len(), 7);
     assert_eq!(state.players[1].hand.len(), 7);
+}
+
+#[test]
+fn roll_for_first_eventually_returns_both_outcomes_and_terminates() {
+    let mut rng = system_rng();
+    let mut saw_true = false;
+    let mut saw_false = false;
+    for _ in 0..500 {
+        if roll_for_first(&mut rng) {
+            saw_true = true;
+        } else {
+            saw_false = true;
+        }
+        if saw_true && saw_false {
+            break;
+        }
+    }
+    assert!(saw_true && saw_false);
 }

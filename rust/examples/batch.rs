@@ -3,15 +3,16 @@
 //! built specifically to let strategy changes be measured rather than
 //! judged from a handful of individually-watched games.
 //!
-//! Who goes first is coin-flipped each game (going first is a real
-//! advantage), so wins are tracked by deck name rather than by player
-//! slot, plus separately by "went first" vs. "went second" to see
-//! whether that alone is skewing results.
+//! Who goes first is decided by a 2d6 roll each game (real tabletop
+//! convention, re-rolling ties) -- going first is a real advantage, so
+//! wins are tracked by deck name rather than by player slot, plus
+//! separately by "went first" vs. "went second" to see whether that alone
+//! is skewing results.
 //!
 //! Run: cargo run --example batch [game count, default 100]
 
 use lorcana_sim::cards::load_deck;
-use lorcana_sim::engine::state::{system_rng, GameOverReason};
+use lorcana_sim::engine::state::{roll_for_first, system_rng, GameOverReason};
 use lorcana_sim::sim::play_game;
 
 fn main() {
@@ -34,7 +35,7 @@ fn main() {
 
     for _ in 0..games {
         let mut rng = system_rng();
-        let amber_goes_first = rng() < 0.5;
+        let amber_goes_first = roll_for_first(&mut rng);
         let (deck_a, deck_b) = if amber_goes_first {
             (amber.clone(), steel.clone())
         } else {

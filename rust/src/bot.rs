@@ -28,10 +28,21 @@ const MULLIGAN_MAX_KEEPABLE_COST: i32 = 4;
 /// so it's just dead until drawn into naturally.
 const MAX_UNINKABLE_IN_OPENING_HAND: usize = 1;
 
+/// Curve-smoothing applies to these costs when there's no cost-1 card in
+/// hand: keep one of each, mulligan any additional copies at the same
+/// cost (even non-duplicate cards) for a better shot at drawing a 1-drop.
+const CURVE_SMOOTHING_COSTS: [i32; 3] = [2, 3, 4];
+
 /// Decides which opening-hand cards to mulligan (put back and redraw).
-/// Cost-based for now: put back anything above the keepable curve, and if
-/// more than one remaining card is uninkable, keep only the cheapest of
-/// those and put back the rest even though their cost was otherwise fine.
+/// Cost-based for now:
+/// 1. Put back anything above the keepable curve (`MULLIGAN_MAX_KEEPABLE_COST`).
+/// 2. If more than one remaining card is uninkable, keep only the
+///    cheapest of those and put back the rest even though their cost was
+///    otherwise fine.
+/// 3. Curve-smoothing: if nothing left in hand costs 1, thin out
+///    redundant copies at cost 2/3/4 (keeping one of each) for a better
+///    chance of pulling a 1-drop on the redraw. It's normal for this to
+///    add up to mulliganing three or more cards at once.
 pub fn decide_mulligan(hand: &[CardInstance]) -> Vec<String> {
     let mut to_mulligan: Vec<String> = hand
         .iter()
@@ -52,6 +63,22 @@ pub fn decide_mulligan(hand: &[CardInstance]) -> Vec<String> {
             .skip(MAX_UNINKABLE_IN_OPENING_HAND)
         {
             to_mulligan.push(c.instance_id.clone());
+        }
+    }
+
+    let has_cost_one = hand
+        .iter()
+        .any(|c| !to_mulligan.contains(&c.instance_id) && c.card.cost == 1);
+    if !has_cost_one {
+        for target_cost in CURVE_SMOOTHING_COSTS {
+            let at_cost: Vec<&CardInstance> = hand
+                .iter()
+                .filter(|c| !to_mulligan.contains(&c.instance_id))
+                .filter(|c| c.card.cost == target_cost)
+                .collect();
+            for c in at_cost.into_iter().skip(1) {
+                to_mulligan.push(c.instance_id.clone());
+            }
         }
     }
 

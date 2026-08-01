@@ -9,8 +9,8 @@ use lorcana_sim::bot::{choose_move, decide_mulligan};
 use lorcana_sim::cards::load_deck;
 use lorcana_sim::engine::actions::{apply_move, Move};
 use lorcana_sim::engine::state::{
-    check_lore_victory, create_game, mulligan, opponent_index, system_rng, CardInstance, GameState,
-    PlayerState,
+    check_lore_victory, create_game, mulligan, opponent_index, roll_for_first, system_rng,
+    CardInstance, GameState, PlayerState,
 };
 use lorcana_sim::engine::turn::{end_turn, start_game};
 
@@ -132,10 +132,11 @@ fn main() {
 
     let mut rng = system_rng();
 
-    // Coin flip for who goes first -- going first is a real advantage
+    // Roll 2d6 per side to decide who goes first (real tabletop
+    // convention, re-rolling ties) -- going first is a real advantage
     // (inking a turn earlier), so which deck lands in "Player 1" (the
     // slot that goes first and skips its opening draw) shouldn't be fixed.
-    let amber_goes_first = rng() < 0.5;
+    let amber_goes_first = roll_for_first(&mut rng);
     let (deck_a, deck_b, name_a, name_b) = if amber_goes_first {
         (amber, steel, "amber-vanilla-test", "steel-vanilla-test")
     } else {
@@ -145,7 +146,7 @@ fn main() {
     let mut state = create_game(deck_a, deck_b, &mut rng);
 
     println!("=== Full game: Player 1 ({name_a}) vs Player 2 ({name_b}) ===");
-    println!("Player 1 goes first.\n");
+    println!("Player 1 wins the roll for first and goes first.\n");
 
     for (i, player) in state.players.iter_mut().enumerate() {
         let to_mulligan = decide_mulligan(&player.hand);

@@ -142,6 +142,26 @@ pub fn mulligan(player: &mut PlayerState, instance_ids: &[String], rng: &mut imp
     player.deck = shuffle(&player.deck, rng);
 }
 
+fn roll_2d6(rng: &mut impl FnMut() -> f64) -> u32 {
+    let d1 = (rng() * 6.0) as u32 + 1;
+    let d2 = (rng() * 6.0) as u32 + 1;
+    d1 + d2
+}
+
+/// Rolls 2d6 per side to decide who goes first (the real tabletop
+/// convention), re-rolling both on a tie. Returns `true` if the "first"
+/// side (whichever the caller treats as canonical) wins the roll. For now
+/// the winner simply goes first -- no winner's-choice modeling yet.
+pub fn roll_for_first(rng: &mut impl FnMut() -> f64) -> bool {
+    loop {
+        let a = roll_2d6(rng);
+        let b = roll_2d6(rng);
+        if a != b {
+            return a > b;
+        }
+    }
+}
+
 fn create_player(id: &str, deck_cards: Vec<Card>, rng: &mut impl FnMut() -> f64) -> PlayerState {
     let shuffled = shuffle(&deck_cards, rng);
     let deck = shuffled.into_iter().map(create_instance).collect();
