@@ -77,11 +77,20 @@ fn damage_and_banish_status(
     }
 }
 
-/// "Name (cost, strength/willpower, ready/exerted, damage if any)" -- shows
-/// the stats the bot actually reasons about, so it's clear why a given
-/// character was judged safe or risky to act with.
+/// "Name (cost, strength/willpower, ready/drying/exerted, damage if any)" --
+/// shows the stats the bot actually reasons about, so it's clear why a
+/// given character was judged safe or risky to act with. "Drying" means
+/// just played this turn -- still in play and unexerted, but (absent Rush)
+/// can't quest or challenge until its owner's next Ready phase, so it's
+/// meaningfully different from truly being available to act with.
 fn describe_character(c: &CardInstance) -> String {
-    let status = if c.exerted { "exerted" } else { "ready" };
+    let status = if c.exerted {
+        "exerted"
+    } else if c.played_this_turn {
+        "drying"
+    } else {
+        "ready"
+    };
     let dmg = if c.damage > 0 {
         format!(", {} dmg", c.damage)
     } else {
