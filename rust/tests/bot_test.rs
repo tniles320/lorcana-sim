@@ -512,6 +512,75 @@ mod choose_move_tests {
 
         assert_eq!(choose_move(&state), Move::Pass);
     }
+
+    #[test]
+    fn does_not_double_count_risk_once_the_single_punisher_is_already_spoken_for() {
+        let mut state = new_game();
+        state.players[0].inked_this_turn = true;
+
+        let mut already_exposed = CardBuilder::new()
+            .strength(2)
+            .willpower(5)
+            .lore_value(2)
+            .build_instance();
+        already_exposed.exerted = true; // already acted earlier this same turn
+        state.players[0].play.push(already_exposed);
+
+        let character = CardBuilder::new()
+            .strength(2)
+            .willpower(5)
+            .lore_value(2)
+            .build_instance();
+        let character_id = character.instance_id.clone();
+        state.players[0].play.push(character);
+
+        // Only one opposing character can safely kill a 5-willpower
+        // character. Total potential exposure is 2 (the already-exerted
+        // character plus this one) against a punisher count of 1, so this
+        // one should be treated as risk-free -- the opponent's single
+        // challenge next turn can't reach both of us regardless.
+        let threat = CardBuilder::new().strength(5).willpower(10).build_instance();
+        state.players[1].play.push(threat);
+
+        assert_eq!(
+            choose_move(&state),
+            Move::Quest {
+                instance_id: character_id
+            }
+        );
+    }
+
+    #[test]
+    fn still_applies_risk_when_more_punishers_exist_than_are_already_spoken_for() {
+        let mut state = new_game();
+        state.players[0].inked_this_turn = true;
+
+        let mut already_exposed = CardBuilder::new()
+            .strength(2)
+            .willpower(5)
+            .lore_value(2)
+            .build_instance();
+        already_exposed.exerted = true;
+        state.players[0].play.push(already_exposed);
+
+        let character = CardBuilder::new()
+            .strength(2)
+            .willpower(5)
+            .lore_value(2)
+            .build_instance();
+        state.players[0].play.push(character);
+
+        // Two independent threats can each safely kill a 5-willpower
+        // character. Total potential exposure is still 2 (same as above),
+        // but now it doesn't exceed the punisher count of 2, so this
+        // character still carries real risk.
+        let threat_a = CardBuilder::new().strength(5).willpower(10).build_instance();
+        let threat_b = CardBuilder::new().strength(6).willpower(10).build_instance();
+        state.players[1].play.push(threat_a);
+        state.players[1].play.push(threat_b);
+
+        assert_eq!(choose_move(&state), Move::Pass);
+    }
 }
 
 mod decide_mulligan_tests {

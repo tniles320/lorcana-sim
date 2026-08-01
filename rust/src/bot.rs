@@ -140,42 +140,61 @@ fn evaluate_challenge(attacker: &CardInstance, defender: &CardInstance) -> Chall
     }
 }
 
-/// Would the opponent have a free (attacker-survives) kill against a
-/// character of ours with these stats, once it's exposed (exerted) on
-/// their turn? Checks every opposing character regardless of its current
-/// exerted/wet-ink state, since all of them will be readied and past wet
-/// ink by the time the opponent's own next turn starts. Only considers a
-/// single attacker at a time -- not combinations of smaller ones ganging
-/// up -- and only the opponent's current board, not hypothetical future
-/// plays we can't see coming (their hand is hidden).
-fn opponent_has_safe_kill(
-    my_strength: i32,
-    my_willpower_remaining: i32,
-    my_resist: i32,
-    opponent: &PlayerState,
-) -> bool {
-    opponent.play.iter().any(|enemy| {
-        let enemy_strength = enemy.card.strength.unwrap_or(0) + keyword_value(enemy, "Challenger");
-        let enemy_resist = keyword_value(enemy, "Resist");
-        let damage_to_me = (enemy_strength - my_resist).max(0);
-        let they_kill_me = damage_to_me >= my_willpower_remaining;
+/// How many distinct opposing characters would have a free (attacker-
+/// survives) kill against a character of ours with these stats, once it's
+/// exposed (exerted) on their turn. Checks every opposing character
+/// regardless of its current exerted/wet-ink state, since all of them will
+/// be readied and past wet ink by the time the opponent's own next turn
+/// starts. Each opposing character can only make one challenge per turn,
+/// which is exactly why this is a *count* rather than a yes/no -- only
+/// that many of our exposed characters can actually be punished, no matter
+/// how many we expose. Only considers single attackers, not combinations
+/// of smaller ones ganging up, and only the opponent's current board, not
+/// hypothetical future plays we can't see coming (their hand is hidden).
+fn punisher_count(my_strength: i32, my_willpower_remaining: i32, my_resist: i32, opponent: &PlayerState) -> i32 {
+    opponent
+        .play
+        .iter()
+        .filter(|enemy| {
+            let enemy_strength =
+                enemy.card.strength.unwrap_or(0) + keyword_value(enemy, "Challenger");
+            let enemy_resist = keyword_value(enemy, "Resist");
+            let damage_to_me = (enemy_strength - my_resist).max(0);
+            let they_kill_me = damage_to_me >= my_willpower_remaining;
 
-        let damage_to_them = (my_strength - enemy_resist).max(0);
-        let enemy_willpower = enemy.card.willpower.unwrap_or(0).max(1);
-        let i_kill_them_back = enemy.damage + damage_to_them >= enemy_willpower;
+            let damage_to_them = (my_strength - enemy_resist).max(0);
+            let enemy_willpower = enemy.card.willpower.unwrap_or(0).max(1);
+            let i_kill_them_back = enemy.damage + damage_to_them >= enemy_willpower;
 
-        they_kill_me && !i_kill_them_back
-    })
+            they_kill_me && !i_kill_them_back
+        })
+        .count() as i32
 }
 
 /// The expected cost of leaving `character` exposed (exerted) given its
-/// willpower remaining after whatever action we're scoring: `character`'s
-/// own threat_value if the opponent has a safe kill against it, unless
-/// `lore_after_action` is close enough to winning that board safety no
-/// longer matters more than closing out the game.
+/// willpower remaining after whatever action we're scoring, and
+/// `total_potential_exposure`: how many of our characters are already
+/// exerted from earlier actions this turn, *plus* how many more (including
+/// `character` itself) could still act this turn and might also end up
+/// exposed. This has to be forward-looking, not just "how many are
+/// already exposed" -- if every character is evaluated independently
+/// assuming nothing else has been risked yet, nothing ever volunteers to
+/// go first, and the board freezes solid even when we vastly outnumber
+/// the opponent's actual punishing capacity.
+///
+/// A single opposing threat can only punish one exposed character per
+/// turn, so once our total potential exposure exceeds the number of
+/// distinct threats capable of punishing this specific character, no
+/// individual character should be modeled as certain to be the one that
+/// dies -- we don't know which one the opponent would pick, and most of
+/// the pool survives regardless of their choice.
+///
+/// Also waived once `lore_after_action` is close enough to winning that
+/// board safety no longer matters more than closing out the game.
 fn retaliation_risk(
     character: &CardInstance,
     willpower_remaining: i32,
+    total_potential_exposure: i32,
     opponent: &PlayerState,
     lore_after_action: i32,
 ) -> i32 {
@@ -184,10 +203,11 @@ fn retaliation_risk(
     }
     let my_strength = character.card.strength.unwrap_or(0);
     let my_resist = keyword_value(character, "Resist");
-    if opponent_has_safe_kill(my_strength, willpower_remaining, my_resist, opponent) {
-        threat_value(character)
-    } else {
+    let punishers = punisher_count(my_strength, willpower_remaining, my_resist, opponent);
+    if punishers == 0 || total_potential_exposure > punishers {
         0
+    } else {
+        threat_value(character)
     }
 }
 
@@ -238,6 +258,20 @@ pub fn choose_move(state: &GameState) -> Move {
         }
     };
 
+    // How many of our characters are already exerted from earlier actions
+    // this turn, plus how many more (unexerted, but capable of quest or
+    // challenge) could still act -- the full pool that might end up
+    // exposed to the opponent's next turn, evaluated once up front so
+    // every character's risk is judged against the whole picture rather
+    // than each in isolation assuming it'd be the only one exposed.
+    let already_exerted_count = active.play.iter().filter(|c| c.exerted).count() as i32;
+    let remaining_actionable_count = active
+        .play
+        .iter()
+        .filter(|c| !c.exerted && (can_quest(c) || can_challenge_as_attacker(c)))
+        .count() as i32;
+    let total_potential_exposure = already_exerted_count + remaining_actionable_count;
+
     for character in &active.play {
         if can_quest(character) {
             let lore_gained = character.card.lore_value.unwrap_or(0);
@@ -246,6 +280,7 @@ pub fn choose_move(state: &GameState) -> Move {
             let risk = retaliation_risk(
                 character,
                 willpower_remaining,
+                total_potential_exposure,
                 opponent,
                 active.lore + lore_gained,
             );
@@ -269,7 +304,13 @@ pub fn choose_move(state: &GameState) -> Move {
                 } else {
                     let willpower_remaining = character.card.willpower.unwrap_or(0)
                         - outcome.attacker_damage_after;
-                    retaliation_risk(character, willpower_remaining, opponent, active.lore)
+                    retaliation_risk(
+                        character,
+                        willpower_remaining,
+                        total_potential_exposure,
+                        opponent,
+                        active.lore,
+                    )
                 };
                 consider(
                     outcome.net_score - risk,
