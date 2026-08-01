@@ -581,6 +581,183 @@ mod choose_move_tests {
 
         assert_eq!(choose_move(&state), Move::Pass);
     }
+
+    #[test]
+    fn shielding_bodyguard_waives_retaliation_risk_for_other_characters() {
+        let mut state = new_game();
+        state.players[0].inked_this_turn = true;
+
+        // Already exerted -- shielding, as if it entered play exerted or
+        // already acted earlier this turn.
+        let mut bodyguard = CardBuilder::new().keywords(&["Bodyguard"]).build_instance();
+        bodyguard.exerted = true;
+        state.players[0].play.push(bodyguard);
+
+        let character = CardBuilder::new()
+            .strength(2)
+            .willpower(5)
+            .lore_value(2)
+            .build_instance();
+        let character_id = character.instance_id.clone();
+        state.players[0].play.push(character);
+
+        // Without the Bodyguard shielding, this is exactly the safe-kill
+        // setup from avoids_questing_into_a_safe_kill_setup -- with the
+        // shield present, any opposing challenge must hit the Bodyguard
+        // instead, so questing here is risk-free.
+        let threat = CardBuilder::new().strength(5).willpower(10).build_instance();
+        state.players[1].play.push(threat);
+
+        assert_eq!(
+            choose_move(&state),
+            Move::Quest {
+                instance_id: character_id
+            }
+        );
+    }
+
+    #[test]
+    fn bodyguard_enters_ready_when_theres_no_one_to_protect() {
+        let mut state = new_game();
+        let bodyguard = CardBuilder::new()
+            .cost(0)
+            .keywords(&["Bodyguard"])
+            .build_instance();
+        let bodyguard_id = bodyguard.instance_id.clone();
+        state.players[0].hand.push(bodyguard);
+
+        // No other characters in play and no threats -- nothing to protect.
+        assert_eq!(
+            choose_move(&state),
+            Move::PlayCharacter {
+                instance_id: bodyguard_id,
+                enter_exerted: false
+            }
+        );
+    }
+
+    #[test]
+    fn bodyguard_enters_exerted_when_theres_someone_to_protect() {
+        let mut state = new_game();
+        let bodyguard = CardBuilder::new()
+            .cost(0)
+            .keywords(&["Bodyguard"])
+            .build_instance();
+        let bodyguard_id = bodyguard.instance_id.clone();
+        state.players[0].hand.push(bodyguard);
+
+        // An existing ally the opponent's board can safely kill -- worth
+        // protecting.
+        let vulnerable_ally = CardBuilder::new().strength(2).willpower(3).build_instance();
+        state.players[0].play.push(vulnerable_ally);
+
+        let threat = CardBuilder::new().strength(5).willpower(10).build_instance();
+        state.players[1].play.push(threat);
+
+        assert_eq!(
+            choose_move(&state),
+            Move::PlayCharacter {
+                instance_id: bodyguard_id,
+                enter_exerted: true
+            }
+        );
+    }
+
+    #[test]
+    fn holds_a_rush_character_without_a_good_target_in_favor_of_a_smaller_normal_play() {
+        let mut state = new_game();
+        state.players[0].inked_this_turn = true;
+        for _ in 0..3 {
+            state.players[0]
+                .inkwell
+                .push(CardBuilder::new().build_instance());
+        }
+
+        let rush_big = CardBuilder::new()
+            .cost(3)
+            .strength(1)
+            .willpower(1)
+            .keywords(&["Rush"])
+            .build_instance();
+        let normal_small = CardBuilder::new().cost(2).build_instance();
+        let normal_small_id = normal_small.instance_id.clone();
+        state.players[0].hand.push(rush_big);
+        state.players[0].hand.push(normal_small);
+
+        // No opposing exerted characters at all -- nothing to ambush, so
+        // the Rush card (despite costing more) is held and the smaller
+        // normal character is played instead.
+        assert_eq!(
+            choose_move(&state),
+            Move::PlayCharacter {
+                instance_id: normal_small_id,
+                enter_exerted: false
+            }
+        );
+    }
+
+    #[test]
+    fn plays_a_rush_character_when_it_has_a_good_ambush_target() {
+        let mut state = new_game();
+        state.players[0].inked_this_turn = true;
+        for _ in 0..3 {
+            state.players[0]
+                .inkwell
+                .push(CardBuilder::new().build_instance());
+        }
+
+        let rush_big = CardBuilder::new()
+            .cost(3)
+            .strength(3)
+            .willpower(3)
+            .keywords(&["Rush"])
+            .build_instance();
+        let rush_big_id = rush_big.instance_id.clone();
+        let normal_small = CardBuilder::new().cost(2).build_instance();
+        state.players[0].hand.push(rush_big);
+        state.players[0].hand.push(normal_small);
+
+        // An exerted, killable opposing target -- a real ambush
+        // opportunity, so the Rush card is no longer held back and wins
+        // as the biggest affordable option.
+        let mut target = CardBuilder::new().strength(1).willpower(3).build_instance();
+        target.exerted = true;
+        state.players[1].play.push(target);
+
+        assert_eq!(
+            choose_move(&state),
+            Move::PlayCharacter {
+                instance_id: rush_big_id,
+                enter_exerted: false
+            }
+        );
+    }
+
+    #[test]
+    fn plays_a_rush_character_anyway_if_its_the_only_option() {
+        let mut state = new_game();
+        state.players[0].inked_this_turn = true;
+        for _ in 0..3 {
+            state.players[0]
+                .inkwell
+                .push(CardBuilder::new().build_instance());
+        }
+
+        let rush_only = CardBuilder::new().cost(2).keywords(&["Rush"]).build_instance();
+        let rush_only_id = rush_only.instance_id.clone();
+        state.players[0].hand.push(rush_only);
+
+        // Nothing else playable and no ambush target -- holding forever
+        // isn't right either, so it still gets played for board
+        // development.
+        assert_eq!(
+            choose_move(&state),
+            Move::PlayCharacter {
+                instance_id: rush_only_id,
+                enter_exerted: false
+            }
+        );
+    }
 }
 
 mod decide_mulligan_tests {

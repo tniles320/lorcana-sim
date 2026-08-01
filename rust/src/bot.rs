@@ -9,7 +9,8 @@
 
 use crate::cards::CardType;
 use crate::engine::actions::{
-    can_challenge_as_attacker, can_quest, keyword_value, legal_challenge_targets, Move,
+    can_challenge_as_attacker, can_quest, has_keyword, keyword_value, legal_challenge_targets,
+    Move,
 };
 use crate::engine::state::{opponent_index, CardInstance, GameState, PlayerState, LORE_TO_WIN};
 
@@ -198,6 +199,23 @@ fn punisher_count(my_strength: i32, my_willpower_remaining: i32, my_resist: i32,
         .count() as i32
 }
 
+/// Does `active` have an exerted Bodyguard character other than
+/// `excluding_id`? If so, any opposing attacker must choose it (if
+/// legally reachable) over anything else this player has -- so every
+/// other exerted character is completely safe from challenges this turn,
+/// not just diluted across a larger pool the way `total_potential_exposure`
+/// handles it. Two deliberate simplifications for this first pass: this
+/// doesn't account for Evasive interactions between the Bodyguard and a
+/// specific opposing attacker (a rare combination), and it doesn't model
+/// the Bodyguard dying partway through the opponent's turn and no longer
+/// being able to absorb further hits from additional attackers.
+fn has_shielding_bodyguard(active: &PlayerState, excluding_id: &str) -> bool {
+    active
+        .play
+        .iter()
+        .any(|c| c.instance_id != excluding_id && c.exerted && has_keyword(c, "Bodyguard"))
+}
+
 /// The expected cost of leaving `character` exposed (exerted) given its
 /// willpower remaining after whatever action we're scoring, and
 /// `total_potential_exposure`: how many of our characters are already
@@ -216,16 +234,22 @@ fn punisher_count(my_strength: i32, my_willpower_remaining: i32, my_resist: i32,
 /// dies -- we don't know which one the opponent would pick, and most of
 /// the pool survives regardless of their choice.
 ///
-/// Also waived once `lore_after_action` is close enough to winning that
-/// board safety no longer matters more than closing out the game.
+/// Waived entirely if an exerted Bodyguard is already shielding this
+/// character (see `has_shielding_bodyguard`), and also once
+/// `lore_after_action` is close enough to winning that board safety no
+/// longer matters more than closing out the game.
 fn retaliation_risk(
     character: &CardInstance,
     willpower_remaining: i32,
     total_potential_exposure: i32,
+    active: &PlayerState,
     opponent: &PlayerState,
     lore_after_action: i32,
 ) -> i32 {
     if lore_after_action >= LORE_TO_WIN - NEAR_WIN_MARGIN {
+        return 0;
+    }
+    if has_shielding_bodyguard(active, &character.instance_id) {
         return 0;
     }
     let my_strength = character.card.strength.unwrap_or(0);
@@ -238,10 +262,40 @@ fn retaliation_risk(
     }
 }
 
+/// Would playing this Rush character right now set up a good immediate
+/// ambush (a legal target it could profitably challenge the same turn)?
+/// This is a quick "is there something worth ambushing" read rather than
+/// a full legality simulation of a not-yet-played character -- it doesn't
+/// re-check Bodyguard-forcing or Evasive here, since the real challenge
+/// step (once it's actually in play) enforces those correctly regardless.
+fn rush_has_a_good_target(card: &CardInstance, opponent: &PlayerState) -> bool {
+    opponent
+        .play
+        .iter()
+        .filter(|defender| defender.exerted)
+        .any(|defender| evaluate_challenge(card, defender).net_score > 0)
+}
+
+/// Is there another character already in play that the opponent's board
+/// could safely kill (given its current willpower remaining)? If so, a
+/// Bodyguard character entering play exerted has real protective value --
+/// any opposing attacker must choose it over anything else it can reach.
+/// If nothing is vulnerable, there's nothing to protect, so entering
+/// ready (available to act) is the better default.
+fn has_a_vulnerable_ally(active: &PlayerState, opponent: &PlayerState) -> bool {
+    active.play.iter().any(|c| {
+        let strength = c.card.strength.unwrap_or(0);
+        let resist = keyword_value(c, "Resist");
+        let willpower_remaining = c.card.willpower.unwrap_or(0) - c.damage;
+        punisher_count(strength, willpower_remaining, resist, opponent) > 0
+    })
+}
+
 /// Picks a single move for the active player. Call in a loop, applying each
 /// move via `actions::apply_move`, until it returns `Move::Pass`.
 pub fn choose_move(state: &GameState) -> Move {
     let active = &state.players[state.active_player];
+    let opponent = &state.players[opponent_index(state.active_player)];
     let available_ink = active.inkwell.iter().filter(|i| !i.exerted).count() as i32;
     let currently_playable = |c: &CardInstance| {
         c.card.card_type.contains(&CardType::Character) && c.card.cost <= available_ink
@@ -262,22 +316,38 @@ pub fn choose_move(state: &GameState) -> Move {
         };
     }
 
-    // 2. Play the biggest character we can currently afford.
-    if let Some(card) = active
+    // 2. Play the biggest character we can currently afford. A Bodyguard
+    //    character enters play exerted only if there's something worth
+    //    protecting -- otherwise it just exposes itself for no benefit.
+    //    A Rush character is a surprise: hold it in hand unless there's a
+    //    good ambush target right now, since playing it just for ordinary
+    //    board development gives up that ambush value for nothing. If
+    //    every playable option is a Rush card with nothing worth
+    //    ambushing, play the biggest one anyway -- holding forever isn't
+    //    right either.
+    let playable: Vec<&CardInstance> = active
         .hand
         .iter()
         .filter(|c| currently_playable(c))
+        .collect();
+    let best_play = playable
+        .iter()
+        .copied()
+        .filter(|c| !has_keyword(c, "Rush") || rush_has_a_good_target(c, opponent))
         .max_by_key(|c| c.card.cost)
-    {
+        .or_else(|| playable.iter().copied().max_by_key(|c| c.card.cost));
+
+    if let Some(card) = best_play {
+        let enter_exerted =
+            has_keyword(card, "Bodyguard") && has_a_vulnerable_ally(active, opponent);
         return Move::PlayCharacter {
             instance_id: card.instance_id.clone(),
-            enter_exerted: false,
+            enter_exerted,
         };
     }
 
     // 3. For every character that can quest or challenge, score both and
     //    take whichever single action scores best across the whole board.
-    let opponent = &state.players[opponent_index(state.active_player)];
     let mut best: Option<(i32, Move)> = None;
     let mut consider = |score: i32, mv: Move| {
         if best.as_ref().is_none_or(|(best_score, _)| score > *best_score) {
@@ -308,6 +378,7 @@ pub fn choose_move(state: &GameState) -> Move {
                 character,
                 willpower_remaining,
                 total_potential_exposure,
+                active,
                 opponent,
                 active.lore + lore_gained,
             );
@@ -335,6 +406,7 @@ pub fn choose_move(state: &GameState) -> Move {
                         character,
                         willpower_remaining,
                         total_potential_exposure,
+                        active,
                         opponent,
                         active.lore,
                     )
