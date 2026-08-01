@@ -131,9 +131,21 @@ fn main() {
     let steel = load_deck("steel-vanilla-test.json");
 
     let mut rng = system_rng();
-    let mut state = create_game(amber, steel, &mut rng);
 
-    println!("=== Full game: Player 1 (amber-vanilla-test) vs Player 2 (steel-vanilla-test) ===\n");
+    // Coin flip for who goes first -- going first is a real advantage
+    // (inking a turn earlier), so which deck lands in "Player 1" (the
+    // slot that goes first and skips its opening draw) shouldn't be fixed.
+    let amber_goes_first = rng() < 0.5;
+    let (deck_a, deck_b, name_a, name_b) = if amber_goes_first {
+        (amber, steel, "amber-vanilla-test", "steel-vanilla-test")
+    } else {
+        (steel, amber, "steel-vanilla-test", "amber-vanilla-test")
+    };
+
+    let mut state = create_game(deck_a, deck_b, &mut rng);
+
+    println!("=== Full game: Player 1 ({name_a}) vs Player 2 ({name_b}) ===");
+    println!("Player 1 goes first.\n");
 
     for (i, player) in state.players.iter_mut().enumerate() {
         let to_mulligan = decide_mulligan(&player.hand);
