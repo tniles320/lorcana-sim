@@ -23,6 +23,31 @@
     "setCode": "4"
   },
   {
+    "id": "crd_b2d382e40e5642e0bd54eb50f0b0dc5c",
+    "name": "Audrey Ramirez",
+    "version": "Gutsy Mechanic",
+    "type": [
+      "Character"
+    ],
+    "ink": "Ruby",
+    "cost": 1,
+    "inkwell": false,
+    "classifications": [
+      "Storyborn",
+      "Ally"
+    ],
+    "text": "Rush (This character can challenge the turn they're played.)",
+    "keywords": [
+      "Rush"
+    ],
+    "strength": 2,
+    "willpower": 1,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "12"
+  },
+  {
     "id": "crd_bd27b70ddc3540489c47c824128ec53f",
     "name": "Bagheera",
     "version": "Cautious Explorer",
@@ -96,29 +121,6 @@
     "setCode": "3"
   },
   {
-    "id": "crd_e4383a9f6b7d4f3291c7935a76610f44",
-    "name": "Dewey",
-    "version": "Lovable Showoff",
-    "type": [
-      "Character"
-    ],
-    "ink": "Amber",
-    "cost": 4,
-    "inkwell": true,
-    "classifications": [
-      "Storyborn",
-      "Ally"
-    ],
-    "text": "",
-    "keywords": [],
-    "strength": 4,
-    "willpower": 4,
-    "loreValue": 1,
-    "moveCost": null,
-    "rarity": "Common",
-    "setCode": "8"
-  },
-  {
     "id": "crd_9d7dbe554e37401d8507e1b3b69c69bd",
     "name": "Hercules",
     "version": "Hero in Training",
@@ -167,6 +169,32 @@
     "moveCost": null,
     "rarity": "Common",
     "setCode": "9"
+  },
+  {
+    "id": "crd_d79f18fa0da949079077eb5ecaad8426",
+    "name": "Iduna",
+    "version": "Alarmed Queen",
+    "type": [
+      "Character"
+    ],
+    "ink": "Ruby",
+    "cost": 2,
+    "inkwell": false,
+    "classifications": [
+      "Storyborn",
+      "Mentor",
+      "Queen"
+    ],
+    "text": "Evasive (Only characters with Evasive can challenge this character.)",
+    "keywords": [
+      "Evasive"
+    ],
+    "strength": 2,
+    "willpower": 3,
+    "loreValue": 1,
+    "moveCost": null,
+    "rarity": "Common",
+    "setCode": "11"
   },
   {
     "id": "crd_0033f4eb44a14ebea87dbdca205d9247",
@@ -627,32 +655,6 @@
     "moveCost": null,
     "rarity": "Common",
     "setCode": "10"
-  },
-  {
-    "id": "crd_0c1fa4bfab94474da9e4a8396bbed19f",
-    "name": "Tiana",
-    "version": "Warm and Happy",
-    "type": [
-      "Character"
-    ],
-    "ink": "Amber",
-    "cost": 4,
-    "inkwell": true,
-    "classifications": [
-      "Dreamborn",
-      "Hero",
-      "Princess"
-    ],
-    "text": "Support (Whenever this character quests, you may add their {S} to another chosen character's {S} this turn.)",
-    "keywords": [
-      "Support"
-    ],
-    "strength": 3,
-    "willpower": 4,
-    "loreValue": 2,
-    "moveCost": null,
-    "rarity": "Common",
-    "setCode": "11"
   },
   {
     "id": "crd_d3dd900e88304c778c319c8facd2c8f2",
